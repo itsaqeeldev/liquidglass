@@ -29,5 +29,6 @@ A first visit downloads about 4.5 MB (gzip), three quarters of it Skia's WebAsse
 compiles the glass shaders for your GPU: a few seconds on a laptop's integrated graphics, cached by the
 browser afterwards. A loader shows while both happen. A browser without WebAssembly garbage collection,
 a failed download or a lost graphics context is reported on the page instead of leaving it black. The
-two demos above load only when scrolled into view.
+two demos above load lazily, as each approaches the viewport (`loading="lazy"`, a hint the browser
+may start early).
 [Measurements](https://github.com/shayann07/liquidglass/blob/main/review/atlas/web-demo-load-2026-10-20/README.md).

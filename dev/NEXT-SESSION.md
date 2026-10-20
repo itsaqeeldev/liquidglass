@@ -4,6 +4,16 @@ Updated 14 October 2026 (Claude takeover from Codex). The previous, longer hando
 at commit `efcc3b5` and in `.local/handoffs/`. Full iOS parity and owner visual acceptance are
 **not** established. Read [TODO.md](TODO.md) and the full objective before changing source.
 
+## Web demo first load, #78 (20 October, PR #85)
+
+Measured in headless Chrome 152 (ANGLE/D3D11, AMD Radeon integrated) with `tools/measure_web_demo.mjs`,
+cold caches, three runs each. The demo downloads 4.46 MB gzip (skiko.wasm 3.28 MB, app 1.08 MB, atlas.js
+0.1 MB); a first visit then spends about 2 s per opening frame compiling shaders. The black page lasted
+7.6 s unthrottled, 11.5 s on fast 4G and 30 s on slow 4G; the loader now shows in 0.05-0.2 s. The time to
+a usable app is unchanged (download plus shaders). Failure states (no Wasm GC, failed download or startup
+error, lost WebGL context) are forced in Chromium only; Firefox, Safari and phones are not measured, and a
+permanent black page was not reproduced. Evidence: review/atlas/web-demo-load-2026-10-20.
+
 ## RELEASED: v1.0.0 (20 Oct 2026)
 
 Release PR #76 merged (4a71394) after CodeRabbit's review: the first-use TODO row stays open

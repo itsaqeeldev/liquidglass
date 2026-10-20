@@ -21,14 +21,17 @@ nothing on the page said which one was happening.
 - **A loader** (`index.html`) shows from the first paint, says what is being loaded, then "Preparing
   the glass" once the Wasm has started. Its bar is a transform animation, so it keeps moving while the
   main thread is busy compiling shaders. `Main.kt` hides it once a frame follows the previous one within
-  100 ms (at most 60 frames), so the half-drawn shader-compile frames are not shown.
+  100 ms, so the half-drawn shader-compile frames are not shown. After 60 frames without one it shows
+  the app anyway (logged to the console): a device that never draws a frame that fast would otherwise
+  keep the loader up for good. A failure reported meanwhile is never replaced by "ready" (review
+  follow-up after `ba932e2`; the measurements and screenshots are from `ba932e2`).
 - **Compose has its own container** (`#app`). `ComposeViewport(document.body)` replaced the body's
   children, which would have removed the loader on mount.
 - **Failures are reported on the page** with a Reload link: no WebAssembly GC (checked before
   anything downloads), a failed download or uncaught error while starting, and a lost WebGL context
   at any time. The canvas lives in Compose's shadow root, where `webglcontextlost` does not reach
   `window`, so the listener is attached to the canvas when its context is created.
-- **The docs page loads each demo when it is scrolled into view** (`loading="lazy"` on both iframes
+- **The docs page loads each demo lazily, as it approaches the viewport** (`loading="lazy"` on both iframes
   in `docs/demo.md`). They loaded together before: two 4.5 MB downloads and two shader compilations at once.
 - No favicon request (it was a 404).
 
@@ -39,7 +42,7 @@ does (gzip, `max-age=600`) and loads `#material3` in headless Chrome 152 with a 
 HTTP and shader caches are cold. "Black" is the time from navigation to the first visible pixel that is
 not the page background: the loader after this change, the app's first frame before it. Windows, AMD
 Radeon integrated graphics through ANGLE/D3D11, 1280 × 800. Throttling is CDP network emulation.
-Three runs each; the before build is `origin/main` at `4cd5ed8`, the after build is this change.
+Three runs each; the before build is `origin/main` at `4cd5ed8`, the after build is `ba932e2`.
 
 | Network | Black page, before | Black page, after | App visible, before | App visible, after |
 | :-- | --: | --: | --: | --: |
@@ -62,7 +65,8 @@ frame at 18.0 s on fast 4G and 39.3 s on slow 4G, a single cold run each with a 
 | **Graphics context lost** | |
 | ![The message "The graphics context was lost. The GPU was reset or ran out of memory." with a Reload link](context-lost.png) | |
 
-*Headless Chrome 152, 960 × 600, this change's build served locally. Loading: throttled to 1.6 Mbit/s
+*Headless Chrome 152 on ANGLE/D3D11 (AMD Radeon integrated graphics), 960 × 600, the `ba932e2` build
+served locally. Loading: throttled to 1.6 Mbit/s
 and captured 3 s in. No WebAssembly GC: `WebAssembly.validate` stubbed to return false. Download failed:
 Playwright aborts every `.wasm` request. Context lost: `WEBGL_lose_context.loseContext()` on the
 app's canvas after it is ready. The same five scenarios on the before build all show a black page.

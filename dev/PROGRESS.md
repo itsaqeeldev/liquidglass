@@ -6,6 +6,12 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
+**20 October web demo first load (#78, PR #85):** a loader replaces the black first load (shown in
+0.05-0.2 s instead of 7.6 s unthrottled / 30 s on slow 4G, headless Chrome, cold caches); Compose mounts
+in `#app`; no-Wasm-GC, failed-download/startup-error and lost-context states show on the page. Download
+(4.46 MB gzip, 3.28 MB of it skiko.wasm) and first-visit shader compilation are unchanged, so the time to a
+usable app is too. Chromium only. [Evidence](../review/atlas/web-demo-load-2026-10-20/README.md).
+
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,
 Atlas diagnostic commands and changelog. Future changes must update documentation and inspected

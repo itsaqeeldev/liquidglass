@@ -8,7 +8,8 @@ Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>
 
 - Web demo: a loader shows from the first paint instead of a black page while the 4.5 MB download and
   the first visit's shader compilation run; a browser without WebAssembly GC, a failed download or a lost
-  graphics context is reported on the page. The docs embed each demo only when it scrolls into view (#78).
+  graphics context is reported on the page. The docs load each embedded demo lazily, as it approaches the
+  viewport (#78).
   [Measurements](review/atlas/web-demo-load-2026-10-20/README.md).
 
 ## 1.0.0 (2026-10-20)

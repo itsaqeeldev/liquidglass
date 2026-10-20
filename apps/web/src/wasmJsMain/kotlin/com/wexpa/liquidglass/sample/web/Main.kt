@@ -31,8 +31,10 @@ fun main() {
     // Not the body: Compose replaces its container's children, and the loader must outlive the first frames.
     ComposeViewport(document.getElementById("app")!!) {
         LaunchedEffect(Unit) {
-            awaitSettledFrames()
-            document.getElementById("loader")?.setAttribute("data-state", "ready")
+            if (!awaitSettledFrames()) println("LiquidGlass demo: no frame settled within $SettleFrameCap frames; showing the app anyway")
+            // A failure index.html reported while the frames settled stays on screen.
+            val loader = document.getElementById("loader")
+            if (loader?.getAttribute("data-state") != "failed") loader?.setAttribute("data-state", "ready")
         }
         var material by remember { mutableStateOf(window.location.hash == "#material3") }
         fun show(m: Boolean) { material = m; window.location.hash = if (m) "material3" else "" }
@@ -49,16 +51,21 @@ fun main() {
     }
 }
 
+private const val SettleFrameCap = 60
+
 /**
- * Returns once a frame follows the previous one within 100 ms. On a first visit the opening frames
- * compile the glass shaders, about 2 s each on a laptop's integrated GPU (review/atlas/web-demo-load-2026-10-20);
- * the page would show them as a black or half-drawn canvas. At most 60 frames.
+ * True once a frame follows the previous one within 100 ms; false after [SettleFrameCap] frames
+ * without one. On a first visit the opening frames compile the glass shaders, about 2 s each on a
+ * laptop's integrated GPU (review/atlas/web-demo-load-2026-10-20); the page would show them as a black
+ * or half-drawn canvas. False still reveals the app: a device that never draws a frame that fast (a
+ * slow GPU, a heavy scene) would otherwise keep the loader up for good.
  */
-private suspend fun awaitSettledFrames() {
+private suspend fun awaitSettledFrames(): Boolean {
     var last = withFrameNanos { it }
-    repeat(60) {
+    repeat(SettleFrameCap) {
         val now = withFrameNanos { it }
-        if (now - last < 100_000_000L) return
+        if (now - last < 100_000_000L) return true
         last = now
     }
+    return false
 }
