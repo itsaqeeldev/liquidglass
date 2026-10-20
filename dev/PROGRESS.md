@@ -6,6 +6,12 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
+**20 October first tap after install (#71):** traced on a Pixel 7: the selector's pad followed its
+deforming body, so its layers were reallocated mid-tap and the first new size compiled a 265-286 ms GPU
+pipeline for the glass shader. `GlassPadFloor` holds the largest pad; the first tap's slowest frame is
+67-91 ms (was 326-352), cold start unchanged. The library baseline profile is removed (no measurable gain).
+[Evidence](../review/atlas/first-tap-fix-2026-10-20/README.md).
+
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,
 Atlas diagnostic commands and changelog. Future changes must update documentation and inspected

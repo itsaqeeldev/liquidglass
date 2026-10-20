@@ -335,6 +335,8 @@ internal fun Modifier.liquidGlassCore(
     // uniforms and allocates, per panel, and on a scrolling screen the inputs are the same
     // frame after frame (the backdrop changes, the uniforms do not).
     val effects = remember { GlassEffectCache() }
+    // A body's pad, held at its largest (see GlassPadFloor), per render scale.
+    val padFloor = remember(state.renderScale) { GlassPadFloor() }
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     // The position, held separately as a value.
     //
@@ -549,6 +551,7 @@ internal fun Modifier.liquidGlassCore(
                 // field and the draw-back translate all use this one pad (see recordPad).
                 val rs = state.renderScale.coerceIn(0.25f, 1f)
                 val pad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx)
+                    .let { if (poseBody != null || body != null) padFloor.hold(it) else it }
                 val useEndpoint = endpointComposite && refractContent && LiquidGlassSupport.hasShaders
                 val sizeFactor = elementSizeFactor(size, this)
                 val tintDrawing=tintWithinThrough?.drawing
@@ -1052,6 +1055,23 @@ private fun DrawScope.drawAdded(layer: GraphicsLayer, dx: Float, dy: Float, shar
         canvas.saveLayer(Rect(-1e4f, -1e4f, 1e4f, 1e4f), paint)
         translate(dx, dy) { drawLayer(layer) }
         canvas.restore()
+    }
+}
+
+/**
+ * The largest pad a selector body has needed so far. A body's optical band follows its deformation,
+ * so the pad derived from it ([recordPad]) changed on most frames of a gesture, and every new padded
+ * size reallocated the node's layers. On Android the first frame at a new size also compiled a new GPU
+ * pipeline for the glass shader: one 265 ms frame on the first tap after install on a Pixel 7 (#71,
+ * review/atlas/first-tap-fix-2026-10-20). Held at its largest, the allocation stays put; a larger pad only
+ * records more margin, and the recording, the shader's `uPad` and the draw-back all use the held value.
+ */
+internal class GlassPadFloor {
+    private var pad = 0f
+
+    fun hold(needed: Float): Float {
+        if (needed > pad) pad = needed
+        return pad
     }
 }
 

@@ -1,7 +1,0 @@
-# Packaged into the AAR by the Kotlin Multiplatform library plugin from this folder (src/androidMain/baselineProfiles).
-# Baseline profile: the classes and methods glass runs on its first frames, compiled ahead of time when an
-# app is installed (through androidx.profileinstaller, which Compose already brings), so the first
-# interaction does not run interpreted. Wildcards cover the whole package: every part of it is on the
-# path from the first glass frame to the first tab bar gesture.
-HSPLcom/wexpa/liquidglass/**->**(**)**
-Lcom/wexpa/liquidglass/**;

@@ -6,6 +6,13 @@ A version heading means that version is published; anything above the newest one
 Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>), uploaded by hand on
 20 October; later tags publish it from the release workflow.
 
+- Android: the first tab bar tap after install no longer stalls for one 326-352 ms frame on a Pixel 7
+  (67-91 ms now). The selector's record pad followed its deforming body, so its layers were reallocated
+  mid-gesture and the first frame at a new size compiled a new GPU pipeline for the glass shader; the pad
+  is now held at its largest. Cold start is unchanged. The library baseline profile is removed: it showed
+  no measurable gain before or after this fix (#71).
+  [Evidence](review/atlas/first-tap-fix-2026-10-20/README.md).
+
 ## 1.0.0 (2026-10-20)
 
 The first release with a compatibility promise ([support and compatibility](docs/compatibility.md)):

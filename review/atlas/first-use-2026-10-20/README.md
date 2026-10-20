@@ -22,6 +22,8 @@ beyond their run-to-run spread (about ±15 ms) on this phone; it ships because i
 devices that would otherwise interpret the library's code, which this measurement does not show.
 
 **Open.** Compiling the selector's shaders before the first gesture (a warm-up draw with the same effect
-chains) would move the one-time hitch out of the interaction; not done. One phone; not measured on lower-end
+chains) would move the one-time hitch out of the interaction; not done. *Superseded: the cause was the
+selector's layers being reallocated mid-gesture, and the frame is gone without a warm-up; see
+[the fix](../first-tap-fix-2026-10-20/README.md). The baseline profile was removed there.* One phone; not measured on lower-end
 devices ([help wanted](https://github.com/shayann07/liquidglass/issues/65)). `adb` input is not a finger;
 presented-frame timing on the display is not measured here.

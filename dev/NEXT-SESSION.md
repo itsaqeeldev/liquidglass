@@ -79,8 +79,8 @@ issues + Discussions for what this machine cannot verify, launch drafts (do not 
    review/atlas/reference-replay-2026-10-13/README.md (no regression; tap pill +0.8/-2, held lens -5 docs2).
    Rejected: tapAppearanceFallOmega 20 (only lengthens the tail). wallscore.py needs a probe.mjs from an old
    scratchpad (missing). First use on Pixel 7: review/atlas/first-use-2026-10-20 (317-370 ms frame on the first
-   tap after install = shader compile; warm-up deferred, #71). Baseline profile lives in
-   liquidglass/src/androidMain/baselineProfiles/ (the KMP library plugin ignores src/androidMain/baseline-prof.txt).
+   tap after install = shader compile; fixed by holding the selector's pad, #71, review/atlas/first-tap-fix-2026-10-20).
+   The library baseline profile (liquidglass/src/androidMain/baselineProfiles/) was removed under #71: no measurable gain.
    Residual issues #70-#75; all dev/TODO.md rows closed.
 6. Review page: .local/review-selector/index.html in the session worktree (local only, build.py p20).
    Owner accepted the selector in advance (20 Oct) and authorized merge, tag v1.0.0 and publish.

@@ -5,6 +5,14 @@ Full iOS parity is not established: the measured differences are open as issues 
 accepted the navigation selector on 20 October. Historical
 research remains available; this page identifies which later changes supersede its implementation.
 
+## First tap after install (20 October, #71)
+
+- The first tab bar tap after install had one 326-352 ms frame on a Pixel 7: the selector's layers were
+  reallocated as its pad followed the deforming body, and the first frame at a new size compiled a new GPU
+  pipeline for the glass shader (265-286 ms, traced). The pad is now held at its largest: the slowest
+  first-tap frame is 67-91 ms, cold start unchanged (medians 135.5 and 136 ms). The library baseline profile is
+  removed (no measurable gain). [Evidence](https://github.com/shayann07/liquidglass/blob/main/review/atlas/first-tap-fix-2026-10-20/README.md).
+
 ## 1.0 (20 October)
 
 - **Parity scoreboard.** All five iOS recordings replayed through the 1.0 build and scored in display

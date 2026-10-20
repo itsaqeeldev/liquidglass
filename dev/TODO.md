@@ -60,15 +60,11 @@ description fix alone.
   backdrop under the pill/lens is bent at the rim and across the body) in the recordings vs our
   replay, with a scorer beside levels.py; report the gap per recording; then ask the owner. Any
   change is opt-in or scored against all five recordings, never a silent re-fit.
-- [ ] **#71 first-tap hitch.** One 317-370 ms frame on the first tap after install on a Pixel 7
-  (shader compile, cached per install); later cold starts 29-65 ms; the baseline profile changed
-  nothing measurable. Try: compile the selector's RuntimeShaders (and draw one 1x1 frame with each)
-  off the gesture path, e.g. when the bar first composes. Measure with
-  review/atlas/first-use-2026-10-20/measure.sh (needs `pm clear` or reinstall between runs to get
-  the first-install case) before and after; ship only if the first-tap max frame drops clearly and
-  cold-start time does not rise (owner: "Yes, if measured better"). Also narrow
-  liquidglass/src/androidMain/baselineProfiles/baseline-prof.txt to the measured path, or remove it
-  if it still shows no gain (CodeRabbit nitpick on #76).
+- [x] **#71 first-tap hitch (itsaqeeldev, 20 Oct).** Traced: the selector's pad followed its deforming
+  body, its layers were reallocated mid-tap (756x505 -> 748x497 -> 740x489) and the first new size compiled
+  a 265-286 ms Vulkan pipeline for the glass shader. GlassPadFloor holds the largest pad: first-tap slowest
+  frame 326-352 -> 67-91 ms (measure.sh CLEAR=1), cold start medians 135.5 / 136 ms (alternated).
+  Baseline profile removed (no measurable gain with or without the fix). review/atlas/first-tap-fix-2026-10-20.
 - [ ] **#70 tap pill plateau ends ~50 ms early.** Scored with `.local/sxs` (main checkout):
   rrw.sh renders a replay (WT=worktree), taparrive.py / tapprofile.py score it, run from the repo
   root. A fall-omega change was tried and rejected 20 Oct (review/atlas/reference-replay-2026-10-13
@@ -562,7 +558,7 @@ Progress:
 - [x] Native studio redesign, Sky/Type/Lines scenes, continuous draggable lens and responsive controls.
 - [x] App-owned AWT replay, stable-layout checks, source screenshots and actual GPU metadata.
 - [x] Prefer NVIDIA discrete GPU; paired static redraw submission improved on the owner's machine.
-- [ ] Fix first-use/live interaction hitches and measure presented-frame/input behavior separately **Open (#71):** the first-use measurement is done (Pixel 7, 20 Oct, review/atlas/first-use-2026-10-20): one 317-370 ms frame on the first tap after install. The hitch itself and presented-frame timing remain open under #71.
+- [ ] Fix first-use/live interaction hitches and measure presented-frame/input behavior separately **First tap fixed (#71, review/atlas/first-tap-fix-2026-10-20); presented-frame timing still open.** The first-use measurement is done (Pixel 7, 20 Oct, review/atlas/first-use-2026-10-20): one 317-370 ms frame on the first tap after install. The hitch itself and presented-frame timing remain open under #71.
   from forced redraw submission and screenshot readback. No false FPS claims from phase snapshots.
   The wide-input fix adds about 3 ms median submission time in the controlled NVIDIA comparison;
   cropping its transformed input preserved pixels but did not improve speed and was rejected.

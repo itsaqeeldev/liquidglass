@@ -52,4 +52,30 @@ class GlassPadContractTest {
         assertEquals(24f, pad)
         assertTrue(wholeLayerPixels(pad, rs))
     }
+
+    /**
+     * #71: a held body's band narrows and widens through a press, and its pad followed, so the
+     * selector's layers were reallocated mid-gesture (on a Pixel 7 the first new size compiled a
+     * 265 ms GPU pipeline). [GlassPadFloor] keeps the largest pad: it never shrinks, always covers
+     * what the body needs, and stays whole layer pixels at every render scale.
+     */
+    @Test
+    fun aDeformingBodyKeepsOneLayerSize() {
+        val held = GlassStyle.Regular.copy(profile = GlassProfile.Held)
+        val bands = listOf(340f, 320f, 300f, 280f, 300f, 340f, 360f, 340f)
+        for (rs in listOf(1f, 0.75f, 0.5f, 0.25f)) {
+            val floor = GlassPadFloor()
+            val needed = bands.map { held.recordPad(radii, size, null, density, rs, bandOverride = it) }
+            assertTrue(needed.distinct().size > 1, "the bands do not move the pad at renderScale $rs: the test proves nothing")
+            val kept = needed.map { floor.hold(it) }
+            for (i in kept.indices) {
+                assertTrue(kept[i] >= needed[i], "held pad ${kept[i]} is below the ${needed[i]} the body needs")
+                if (i > 0) assertTrue(kept[i] >= kept[i - 1], "held pad shrank from ${kept[i - 1]} to ${kept[i]}")
+                assertTrue(wholeLayerPixels(kept[i], rs), "held pad ${kept[i]} at renderScale $rs is not whole layer pixels")
+            }
+            assertEquals(needed.max(), kept.last())
+            // Only a wider band than any before grows it: one reallocation, not one per frame.
+            assertEquals(2, kept.distinct().size, "the held pad changed more than once at renderScale $rs")
+        }
+    }
 }
