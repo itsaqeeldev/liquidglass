@@ -4,8 +4,85 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Atlas Studio · LiquidGlass</title>
-    <style>html, body { margin: 0; height: 100%; overflow: hidden; background: #05070d; }</style>
-    <script type="application/javascript" src="atlas.js"></script>
+    <link rel="icon" href="data:,">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #05070d; }
+        /* Compose owns this element and replaces its children; the loader stays outside it. */
+        #app { position: fixed; inset: 0; }
+        /* Shown until the app has drawn settled frames (Main.kt sets data-state="ready"). The bar is a
+           transform animation, so it keeps moving while the first frames compile shaders on the main thread. */
+        #loader {
+            position: fixed; inset: 0; z-index: 10; box-sizing: border-box; padding: 24px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+            background: #05070d; color: #d6dae4; text-align: center;
+            font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            transition: opacity .25s;
+        }
+        #loader[data-state="ready"] { opacity: 0; visibility: hidden; transition: opacity .25s, visibility 0s .25s; }
+        #loader small { max-width: 34em; color: #8a91a3; }
+        #loader a { color: #9dbcff; }
+        #loader .bar { width: min(240px, 60vw); height: 4px; border-radius: 2px; background: #1c2131; overflow: hidden; }
+        #loader .bar::after {
+            content: ""; display: block; width: 40%; height: 100%; border-radius: 2px; background: #9dbcff;
+            animation: loading 1.2s ease-in-out infinite;
+        }
+        #loader[data-state="failed"] .bar { display: none; }
+        @keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+        @media (prefers-reduced-motion: reduce) { #loader .bar::after { animation-duration: 4s; } }
+    </style>
 </head>
-<body></body>
+<body>
+<div id="app"></div>
+<div id="loader" role="status" aria-live="polite">
+    <div id="loader-title">Loading the demo (about 4.5 MB)</div>
+    <div class="bar"></div>
+    <small id="loader-detail">A first visit also compiles the glass shaders for your GPU, which can take a few seconds.</small>
+</div>
+<script>
+    // Starts the app, or says why it cannot start: a black page is never the answer (#78).
+    (function () {
+        var loader = document.getElementById('loader');
+        function fail(title, detail) {
+            loader.dataset.state = 'failed';
+            document.getElementById('loader-title').textContent = title;
+            var small = document.getElementById('loader-detail');
+            small.textContent = detail + ' ';
+            var again = document.createElement('a');
+            again.href = location.href; again.textContent = 'Reload';
+            again.onclick = function (e) { e.preventDefault(); location.reload(); };
+            small.appendChild(again);
+        }
+        function starting() { return loader.dataset.state !== 'ready' && loader.dataset.state !== 'failed'; }
+        // The smallest module that declares a GC struct type (as wasm-feature-detect checks it).
+        var gc = typeof WebAssembly === 'object' &&
+            WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0]));
+        if (!gc) {
+            fail('This browser cannot run the demo.',
+                'It needs WebAssembly garbage collection: current Chrome, Edge or Firefox, or Safari 18.2 or later.');
+            return;
+        }
+        addEventListener('error', function (e) {
+            if (starting()) fail('The demo stopped while starting.', String(e.message || e.error || 'Unknown error') + '.');
+        });
+        addEventListener('unhandledrejection', function (e) {
+            var r = e.reason;
+            if (starting()) fail('The demo stopped while starting.', String((r && r.message) || r || 'Unknown error') + '.');
+        });
+        // Neither Compose nor Skiko restores a lost WebGL context, so the canvas would stay blank for good.
+        // The canvas lives in Compose's shadow root, where the event does not reach window: listen on the
+        // canvas itself, from the moment its context is created.
+        var getContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (type) {
+            if (/webgl/.test(type)) this.addEventListener('webglcontextlost', function () {
+                fail('The graphics context was lost.', 'The GPU was reset or ran out of memory.');
+            });
+            return getContext.apply(this, arguments);
+        };
+        var script = document.createElement('script');
+        script.src = 'atlas.js';
+        script.onerror = function () { fail('The demo could not be downloaded.', 'Check the connection and try again.'); };
+        document.body.appendChild(script);
+    })();
+</script>
+</body>
 </html>

@@ -5,6 +5,14 @@ Full iOS parity is not established: the measured differences are open as issues 
 accepted the navigation selector on 20 October. Historical
 research remains available; this page identifies which later changes supersede its implementation.
 
+## Web demo first load (20 October, #78)
+
+- The demo showed a black page for 7.6 s unthrottled and 30 s on slow 4G on a first visit (a 4.46 MB gzip
+  download, three quarters of it Skia's runtime, then about 2 s per opening frame compiling shaders). A
+  loader now shows within 0.05-0.2 s; the time to a usable app is unchanged. Missing WebAssembly GC,
+  failed downloads and lost WebGL contexts are reported on the page. Chromium only:
+  [measurements](https://github.com/shayann07/liquidglass/blob/main/review/atlas/web-demo-load-2026-10-20/README.md).
+
 ## 1.0 (20 October)
 
 - **Parity scoreboard.** All five iOS recordings replayed through the 1.0 build and scored in display
