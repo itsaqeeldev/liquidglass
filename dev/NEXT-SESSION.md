@@ -1,14 +1,17 @@
 # Resume LiquidGlass / Atlas Studio
 
-## External-report implementation checkpoint (20 October)
+## Compose cache/field fixes and PR #83 review follow-up (20 October)
 
-Reporter is implementing #80–#82 on `fix/compose-cache-and-field-cost`. Candidate source and
-focused regressions, Android/Wasm compilation and ABI check pass. The full renderer run recorded
-393 passes, 27 opt-in skips and three coroutine timeouts with four workers; all three timed-out
-cases pass on an unchanged-source, single-worker rerun. The field probe shows
-approximately 72.5% lower warmed Java allocations, with unchanged
-pixels in the measured cases and only small CPU-time differences. No release or physical-device
-claim. See `review/atlas/compose-cache-field-2026-10-20/README.md` for exact verification status.
+#80 and #82 are implemented; #81's capability guard, scratch reuse and documentation are done.
+Bounded-resolution/off-composition work remains open. Review changes cap retained buffers at
+256k pixels (~4.25 MiB), round size/pad once for both cache and construction, add root-region and
+pool-fallback regressions, and declare coroutines directly. Focused checks and the updated probe
+pass (22 tests); the full renderer run passes with 427 tests, zero failures/errors and 27 opt-in
+skips (one worker, 27m04s). Android sample, Wasm, ABI and strict docs/link checks also pass.
+The updated allocation result is
+72.5% lower for a small pooled field and 30% lower for large fields using temporary buffers;
+CPU medians are slower in this run. Historical higher-cap measurements and initial test failures
+are preserved in `review/atlas/compose-cache-field-2026-10-20/README.md`. No release/device claim.
 
 Updated 14 October 2026 (Claude takeover from Codex). The previous, longer handoff is preserved
 at commit `efcc3b5` and in `.local/handoffs/`. Full iOS parity and owner visual acceptance are

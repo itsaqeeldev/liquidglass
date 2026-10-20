@@ -46,7 +46,7 @@ class GlassPathFieldCacheRegressionTest {
             val frame = tick
             val field = rememberGlassPathField(
                 shape, if (second) Size(80f, 40f) else Size(100f, 60f),
-                if (second) 20f else 10f, 16f, density, LayoutDirection.Ltr
+                if (second) 20f else 10f, 16f, density, LayoutDirection.Ltr, enabled = true
             )
             SideEffect { if (frame >= 0) result = field }
         }
@@ -72,5 +72,56 @@ class GlassPathFieldCacheRegressionTest {
         val correct = result
         runOnIdle { tick++ }; waitForIdle()
         assertSame(correct, result)
+    }
+
+    @Test fun subpixelGeometryReusesFieldUntilRoundedInputsChange() = runComposeUiTest {
+        val density = Density(1f)
+        val outlines = mutableListOf<Size>()
+        val shape = object : Shape {
+            override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+                outlines += size
+                return Outline.Generic(Path().apply {
+                    moveTo(0f, 0f); lineTo(size.width / 2, 12f)
+                    lineTo(size.width, 0f); lineTo(size.width, size.height)
+                    lineTo(0f, size.height); close()
+                })
+            }
+        }
+        var size by mutableStateOf(Size(100.1f, 60.1f))
+        var pad by mutableFloatStateOf(10.1f)
+        var result: GlassPathField? = null
+        setContent {
+            val field = rememberGlassPathField(shape, size, pad, 16f, density,
+                LayoutDirection.Ltr, enabled = true)
+            SideEffect { result = field }
+        }
+        waitForIdle()
+        val first = result
+        runOnIdle { pad = 10.4f }; waitForIdle()
+        assertSame(first, result, "Sub-pixel pad changes within a pixel bucket must reuse the EDT")
+        runOnIdle { size = Size(100.4f, 60.4f) }; waitForIdle()
+        assertSame(first, result)
+        assertEquals(listOf(Size(100f, 60f)), outlines)
+
+        fun assertMatchesRoundedBuild(expectedSize: Size, expectedPad: Float) {
+            assertEquals(expectedSize, outlines.last())
+            val path = (shape.createOutline(expectedSize, LayoutDirection.Ltr, density) as Outline.Generic).path
+            val fresh = buildPathField(path, (expectedSize.width + 2 * expectedPad).toInt(),
+                (expectedSize.height + 2 * expectedPad).toInt(), expectedPad, 16f)!!
+            assertEquals(fresh.layerWidth, result!!.layerWidth)
+            assertEquals(fresh.layerHeight, result!!.layerHeight)
+            val actual = result!!.bitmap.toPixelMap()
+            val reference = fresh.bitmap.toPixelMap()
+            for (y in 0 until reference.height) for (x in 0 until reference.width) {
+                assertEquals(reference[x, y], actual[x, y])
+            }
+        }
+        runOnIdle { pad = 10.6f }; waitForIdle()
+        assertNotSame(first, result)
+        assertMatchesRoundedBuild(Size(100f, 60f), 11f)
+        val changedPad = result
+        runOnIdle { size = Size(100.6f, 60.6f) }; waitForIdle()
+        assertNotSame(changedPad, result)
+        assertMatchesRoundedBuild(Size(101f, 61f), 11f)
     }
 }

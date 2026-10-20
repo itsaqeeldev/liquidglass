@@ -8,6 +8,43 @@ import java.util.concurrent.Executors
 import kotlin.test.*
 
 class GlassPathFieldBufferTest {
+    @Test fun oversizedBuildDoesNotGrowOrReplaceRetainedWorkspace() {
+        val limit = 256 * 1024
+        val retained = GlassPathFieldBufferPool.use(limit.toLong()) {
+            it.ensureCapacity(limit)
+            it
+        }
+        GlassPathFieldBufferPool.use(limit.toLong() + 1) {
+            assertNotSame(retained, it)
+            it.ensureCapacity(limit + 1)
+            assertEquals(limit + 1, it.inside.size)
+        }
+        GlassPathFieldBufferPool.use(1) {
+            assertSame(retained, it)
+            assertEquals(limit, it.inside.size, "An oversized one-off build must not pin larger arrays")
+        }
+    }
+
+    @Test fun busyPoolUsesIndependentWorkspaceAndReleasesAfterFailure() {
+        var retained: GlassPathFieldBuffers? = null
+        assertFailsWith<IllegalStateException> {
+            GlassPathFieldBufferPool.use(100) { outer ->
+                retained = outer
+                outer.ensureCapacity(100)
+                outer.distance[0] = 42f
+                // The pool is already owned: a nested caller must neither block nor share storage.
+                GlassPathFieldBufferPool.use(100) { fallback ->
+                    assertNotSame(outer, fallback)
+                    fallback.ensureCapacity(100)
+                    fallback.distance[0] = 7f
+                }
+                assertEquals(42f, outer.distance[0])
+                error("Simulated failed field build")
+            }
+        }
+        GlassPathFieldBufferPool.use(100) { assertSame(retained, it) }
+    }
+
     private fun path(w: Int, h: Int, notch: Int) = Path().apply {
         moveTo(0f, 0f); lineTo(w / 2f, notch.toFloat()); lineTo(w.toFloat(), 0f)
         lineTo(w.toFloat(), h.toFloat()); lineTo(0f, h.toFloat()); close()

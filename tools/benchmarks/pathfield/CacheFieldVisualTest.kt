@@ -35,7 +35,7 @@ class CacheFieldVisualTest {
         setContent {
             val next = rememberGlassPathField(shape,
                 if (changed) Size(80f, 40f) else Size(100f, 60f),
-                if (changed) 20f else 10f, 16f, density, LayoutDirection.Ltr)
+                if (changed) 20f else 10f, 16f, density, LayoutDirection.Ltr, enabled = true)
             SideEffect { field = next }
         }
         waitForIdle()

@@ -51,7 +51,7 @@ recording with its own content on top, so no glass samples itself.
 A theme nested inside another changes the defaults, the appearance and the accessibility settings
 for its subtree. The outermost one records, and its `background` is the one used.
 
-On the unreleased 1.1 branch, views of that recording follow consumer lifetime: changing settings
+Views of that recording follow consumer lifetime: changing settings
 releases the old view when no child still uses it, and disposing the last consumer removes it.
 Children using the same settings share one view.
 

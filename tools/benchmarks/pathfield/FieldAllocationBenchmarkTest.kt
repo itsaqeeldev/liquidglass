@@ -10,7 +10,7 @@ class FieldAllocationBenchmarkTest {
         val bean = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
         bean.isThreadAllocatedMemoryEnabled = true
         val tid = Thread.currentThread().threadId()
-        for ((w, h) in listOf(1080 to 300, 1080 to 720)) {
+        for ((w, h) in listOf(512 to 256, 1080 to 300, 1080 to 720)) {
             val p = Path().apply {
                 moveTo(0f, 0f); lineTo(w*.4f, 0f); lineTo(w*.5f, 12f); lineTo(w*.6f, 0f)
                 lineTo(w.toFloat(), 0f); lineTo(w.toFloat(), h.toFloat()); lineTo(0f,h.toFloat()); close()

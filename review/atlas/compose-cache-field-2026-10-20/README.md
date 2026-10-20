@@ -1,23 +1,52 @@
 # Compose cache and field maintenance
 
-Candidate based on upstream `4cd5ed8` (20 October 2026), addressing issues 80–82. No shader,
-material parameter, motion constant, resolution or published API change.
+Implementation based on upstream `4cd5ed8` (20 October 2026), addressing issues 80–82.
+PR #83's review follow-up lowers retained storage and rounds cache/build inputs consistently to
+whole layer pixels. No shader, material parameter, motion constant, field resolution or published
+API change.
 
 ## Changes
 
 - A remembered lease reference-counts views of the shared backdrop. Changing settings or leaving
   composition releases it; abandonment before effects run also releases the acquisition. Multiple
   active consumers share a view. Only active views are mirrored.
-- Sampled-field keys include actual size and pad, so different inner geometry cannot collide on
-  equal rounded padded dimensions.
+- Sampled-field keys include whole-pixel rounded size and pad; outline construction and rasterization
+  consume exactly those same values. Sub-pixel changes inside a rounding bucket reuse the field;
+  equal padded dimensions cannot hide different rounded inner geometry.
 - Shader-incapable backends skip field preparation.
 - The full-resolution EDT uses reusable `inside`, `dx`, `dy`, distance and outer-distance buffers.
   The second transform reuses the first transform's working arrays; published bitmaps own their
-  output. A single nonblocking pool retains up to 1,048,576 pixels of arrays (~17 MiB); larger or
+  output. A single nonblocking pool retains up to 262,144 pixels of arrays (~4.25 MiB); larger or
   concurrent builds use temporary workspaces. The pool is shared across panels and is intentionally
   bounded, not a per-panel high-water allocation. It retains memory for the process lifetime.
 
-## Paired CPU/allocation probe
+## Current probe after review: 256k-pixel retained cap
+
+Same environment and paired method described below, with a 512×256 panel added to exercise the
+retained path. Mode 2 is the production pool policy: reuse below the cap, temporary storage above it.
+All three sizes pass baseline/new pixel equality. These are calling-thread Java bytes, not total
+process or native/GPU memory.
+
+| Panel px | Mode | p50 ms | p95 ms | Java bytes/build (median) |
+| --- | --- | ---: | ---: | ---: |
+| 512×256 | Baseline | 9.7722 | 14.7801 | 6,811,344 |
+| 512×256 | New, fresh | 9.7231 | 16.4850 | 4,768,528 |
+| 512×256 | Production pool policy | 10.3019 | 15.7616 | 1,874,288 |
+| 1080×300 | Baseline | 18.4575 | 20.9911 | 15,703,504 |
+| 1080×300 | New, fresh | 19.9832 | 22.4556 | 10,993,040 |
+| 1080×300 | Production pool policy | 20.2133 | 22.3204 | 10,993,072 |
+| 1080×720 | Baseline | 40.5403 | 45.4263 | 34,653,904 |
+| 1080×720 | New, fresh | 45.1652 | 59.7342 | 24,258,320 |
+| 1080×720 | Production pool policy | 43.7376 | 47.6313 | 24,258,352 |
+
+Allocation falls approximately 72.5% for the warmed small field and 30% for both large fields.
+The latter no longer grow or use the retained workspace. New production-policy CPU medians are
+slower in this run; allocation reduction is not a CPU speedup claim.
+
+## Historical probe at `c1d2b5a`: superseded 1M-pixel retained cap
+
+The following large-field 72.5% result describes the initial PR, **not the current pool policy**.
+It is preserved to show the memory/allocation tradeoff requested in review.
 
 Windows, Intel i7-10700, JBR/OpenJDK 25.0.3, Compose 1.12.2, Skiko 0.150.2. Direct field calls,
 not shader rendering or presented frames. Baseline is the full-resolution implementation from
@@ -73,7 +102,7 @@ screenshot, physical-device validation or frame-time evidence.
 Reproduce with the same opt-in init script and `--tests '*CacheFieldVisualTest' --rerun`.
 Output: `liquidglass/build/reports/atlas/compose-cache-field/field-cache.png`.
 
-## Verification
+## Initial verification at `c1d2b5a`
 
 - Before changes: lifecycle and geometry-cache reproductions fail (2 tests).
 - Focused candidate: lifecycle, field-cache, buffer reuse/concurrency and existing field/odd-pad
@@ -95,3 +124,27 @@ Output: `liquidglass/build/reports/atlas/compose-cache-field/field-cache.png`.
   `:liquidglass:checkKotlinAbi` pass. Strict MkDocs, repository links and whitespace checks pass.
 - No physical-device run. Existing field/odd-pad render checks are the optical gates for this
   maintenance change; screenshots are not timing evidence.
+
+## Review follow-up verification
+
+- Added regression coverage for sub-pixel pad/size reuse, rounding-boundary invalidation and
+  pixel equality with a build using the rounded inputs; existing equal-padded-size regression
+  remains a gate.
+- Added root-region replacement while nested leases are alive, oversized-build retention bounds,
+  busy-pool independent storage and lock release after a build failure.
+- Shader capability is read once at the production call site and explicitly passed to field
+  preparation. `kotlinx-coroutines-core` is declared directly; the nonblocking Mutex is retained
+  so concurrent/future off-composition callers remain safe.
+- Focused regressions, existing field/odd-pad tests, packaged benchmark and field visualization
+  pass: 22 tests, zero failures/errors/skips (1m28s). Regenerated field visualization is
+  byte-identical to the inspected image above.
+- Full `:liquidglass:jvmTest --rerun`: **427 tests, 400 passed, 27 opt-in showcase skips,
+  zero failures/errors**, using one renderer worker with 768 MiB heap (27m04s for the combined
+  command). No test assertions or timeouts were relaxed.
+- The same command also passes `:sample:assembleDebug`, `:liquidglass:checkKotlinAbi` and
+  `:liquidglass:compileKotlinWasmJs`, with `--max-workers=2`. The single test-worker setting was
+  supplied through a local Gradle init script; the repository's build defaults are unchanged.
+- Strict MkDocs, all 138 repository/visual links and whitespace checks pass.
+- The maintainer separately reported the initial `c1d2b5a` suite passing on Windows/JDK 21:
+  423 tests, zero failures, 27 opt-in skips. This is reviewer-reported evidence for the initial
+  revision, not a substitute for the current local verification.

@@ -66,11 +66,15 @@ Nothing else is required; the shape being a path is detected and handled. What h
 3. The field is encoded into a texture and bound as a second shader input.
 4. The shader reads the measurement instead of evaluating a formula.
 
-It is rebuilt when the shape, unpadded size, padding, band, density or layout direction changes.
+It is rebuilt when the shape, whole-pixel unpadded size or padding, band, density or layout direction
+changes. Size and padding are rounded once to the nearest layer pixel, and those same values define
+both the cache key and the constructed outline/field. Sub-pixel changes within a rounding bucket
+reuse the field; crossing a bucket boundary rebuilds it. This introduces up to half a pixel of
+rounding per size/padding input, below the stored field's two-pixel texel spacing.
 Stable geometry is reused across scroll and press updates. Remember identity-based custom shapes;
 creating a new shape instance on every recomposition can invalidate the field unnecessarily.
 
-The unreleased cache-key correction is illustrated below: changing size and padding while keeping
+The cache-key correction is illustrated below: changing size and padding while keeping
 the same padded dimensions produces the fresh reference field.
 
 ![Field cache collision corrected against a fresh reference](https://raw.githubusercontent.com/shayann07/liquidglass/main/review/atlas/compose-cache-field-2026-10-20/field-cache.png)
@@ -86,9 +90,9 @@ field can take tens of milliseconds even on a desktop CPU; this is not a device 
 measurement. If you animate a path shape's size continuously it rebuilds every frame. Animate the
 contents, use a closed-form shape, or measure whether a one-off rebuild fits your frame budget.
 
-The unreleased 1.1 fixes skip field construction on shader-incapable backends and reuse a bounded
+Shader-incapable backends skip field construction; supported backends reuse a bounded
 shared transform workspace. They reduce allocation without making the computation asynchronous.
-See [performance](performance.md#unreleased-compose-cache-and-field-fixes) for the measurements
+See [performance](performance.md#compose-cache-and-field-behaviour) for the measurements
 and retained-memory tradeoff.
 
 Two encoding choices are worth knowing about, because they bound the quality:

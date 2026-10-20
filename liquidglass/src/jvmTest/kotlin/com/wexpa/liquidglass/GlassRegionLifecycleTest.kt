@@ -12,6 +12,35 @@ import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class GlassRegionLifecycleTest {
+    @Test fun rootSettingsReplacementReleasesOldRegionWithNestedConsumersAlive() = runComposeUiTest {
+        var rootLevel by mutableFloatStateOf(0f)
+        var show by mutableStateOf(true)
+        lateinit var root: GlassRegion
+        setContent {
+            if (show) LiquidGlassTheme(dark = true, reduceTransparency = rootLevel) {
+                root = LocalGlassRegion.current!!
+                LiquidGlassTheme(reduceTransparency = .75f) {
+                    Box(Modifier.size(12.dp).glassEffect())
+                    Box(Modifier.size(8.dp).glassEffect())
+                }
+            }
+        }
+        waitForIdle()
+        val old = root
+        val oldView = old.views.values.single()
+        runOnIdle { rootLevel = .25f }; waitForIdle()
+        assertNotSame(old, root)
+        assertTrue(old.views.isEmpty(), "Replacing the root must release every old lease")
+        assertTrue(old.layers.isEmpty())
+        val replacement = root.views.values.single()
+        assertNotSame(oldView, replacement)
+        assertSame(root.state.layer, replacement.layer)
+        assertEquals(root.state.sourceSize, replacement.sourceSize)
+        runOnIdle { show = false }; waitForIdle()
+        assertTrue(root.views.isEmpty())
+        assertTrue(root.layers.isEmpty())
+    }
+
     @Test fun sharedSettingsSurviveUntilTheirLastConsumerLeaves() = runComposeUiTest {
         var first by mutableStateOf(true)
         var second by mutableStateOf(true)

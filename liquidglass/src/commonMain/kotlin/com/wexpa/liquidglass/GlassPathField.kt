@@ -67,19 +67,23 @@ internal fun rememberGlassPathField(
     band: Float,
     density: Density,
     layoutDirection: LayoutDirection,
-    enabled: Boolean = LiquidGlassSupport.hasShaders,
+    enabled: Boolean,
 ): GlassPathField? {
     // Do not even ask the shape for an outline on a backend that cannot consume its field.
     if (!enabled) return null
-    val w = (size.width + pad * 2f).roundToInt()
-    val h = (size.height + pad * 2f).roundToInt()
+    // Quantize once to layer pixels for both identity and construction. Tiny input changes must
+    // neither rerun the EDT nor leave a key describing different geometry from its bitmap.
+    val fieldSize = Size(size.width.roundToInt().toFloat(), size.height.roundToInt().toFloat())
+    val fieldPad = pad.roundToInt().toFloat()
+    val w = (fieldSize.width + fieldPad * 2f).roundToInt()
+    val h = (fieldSize.height + fieldPad * 2f).roundToInt()
     // The outline depends on density and direction as well as size: an asymmetric path mirrors
     // under RTL, so both belong in the key.
-    return remember(shape, size, pad, band, density, layoutDirection) {
-        if (w <= 0 || h <= 0 || size.width <= 0f || size.height <= 0f) return@remember null
-        val outline = shape.createOutline(size, layoutDirection, density)
+    return remember(shape, fieldSize, fieldPad, band, density, layoutDirection) {
+        if (w <= 0 || h <= 0 || fieldSize.width <= 0f || fieldSize.height <= 0f) return@remember null
+        val outline = shape.createOutline(fieldSize, layoutDirection, density)
         val path = (outline as? Outline.Generic)?.path ?: return@remember null
-        buildPathField(path, w, h, pad, band)
+        buildPathField(path, w, h, fieldPad, band)
     }
 }
 
@@ -112,12 +116,12 @@ internal class GlassPathFieldBuffers {
 }
 
 /**
- * One bounded reusable workspace (at most ~17 MiB of primitive arrays), not one per panel.
+ * One bounded reusable workspace (at most ~4.25 MiB of primitive arrays), not one per panel.
  * Concurrent callers never wait for it or share writable buffers: they use temporary storage.
  * Larger builds also use temporary storage so a large one-off panel does not grow the pool.
  */
-private object GlassPathFieldBufferPool {
-    private const val MAX_RETAINED_PIXELS = 1024L * 1024L
+internal object GlassPathFieldBufferPool {
+    private const val MAX_RETAINED_PIXELS = 256L * 1024L
     private val mutex = Mutex()
     private val buffers = GlassPathFieldBuffers()
 

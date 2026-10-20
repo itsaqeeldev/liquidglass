@@ -6,7 +6,17 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
-**20 October external-report fixes (#80–#82):** candidate adds reference-counted remembered view
+**20 October PR #83 review follow-up:** capped retained storage at 256k pixels (~4.25 MiB);
+key and build now use the same whole-pixel rounded size/pad. Added root-region replacement,
+sub-pixel reuse/boundary and oversized/busy-pool regressions, explicit capability propagation
+and direct coroutines dependency. All 22 focused tests/probes pass in 1m28s. Full renderer run:
+427 tests, 400 passed, 27 opt-in skips, zero failures/errors (one worker, 27m04s). Android sample,
+Wasm compilation, Kotlin ABI and strict docs/link checks pass.
+Updated Java allocation reductions: 72.5% for a small pooled field, 30% for large temporary builds.
+CPU medians are slower in this run. Docs now describe the implemented state and track #81's
+bounded-resolution/off-composition follow-up separately.
+
+**20 October initial external-report fixes (`c1d2b5a`, superseded pool cap):** adds reference-counted remembered view
 leases (including abandonment), actual field-geometry keys, capability gating and bounded EDT
 scratch reuse. Two original reproductions failed before the fix; focused regressions pass.
 Paired large-field probe: about 72.5% less Java allocation after pool warmup, pixels unchanged in
