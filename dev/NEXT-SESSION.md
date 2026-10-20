@@ -6,13 +6,17 @@ at commit `efcc3b5` and in `.local/handoffs/`. Full iOS parity and owner visual 
 
 ## Material 3 polish, #79 (20 October, PR #84)
 
-Library: `Slider` and `RangeSlider` tracks stopped half a thumb (19 dp) short of each end, because
-Material lays the track out between the thumb's centre positions and the glass track inset again;
-they now draw half a thumb past both ends. `GlassSliderTrackTest` failed before ("the track starts
-19 px in") and passes after. Demo: the mini player is inset 20 x 14 dp with a gap before the switch and
-a pause glyph; the hero cover is capped at 280 dp on wide windows. `:liquidglass-material3:jvmTest`
-18/18, ABI unchanged; desktop renders before/after, a Pixel 7 capture and browser captures in
-review/atlas/material3-polish-2026-10-20. The menu, dialog, sheet and tooltip were not re-inspected.
+- Library: `Slider` and `RangeSlider` tracks stopped half a thumb short of each end, because Material
+  lays the track out between the thumb's centre positions and the glass track inset again; they now draw
+  half a thumb past both ends. Half a thumb is 19 dp, derived from the authored 38 dp thumb width.
+- Measured: `GlassSliderTrackTest` read the track starting 19 px in (density 1) before the fix, and at
+  the slider's ends after it.
+- Authored (demo layout, not measured): the mini player's 20 x 14 dp inset and 10 dp gap before the
+  switch, the pause glyph, and the 280 dp cap on the hero cover on wide windows.
+- Regression pass: `:liquidglass-material3:jvmTest` 18 of 18; `checkKotlinAbi` unchanged.
+- Audit: every component on the page, including the menu, dialog, sheet and tooltip, inspected on the
+  desktop and in the browser; desktop renders before/after, a Pixel 7 capture and browser captures in
+  review/atlas/material3-polish-2026-10-20.
 
 ## RELEASED: v1.0.0 (20 Oct 2026)
 

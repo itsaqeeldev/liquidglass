@@ -7,9 +7,11 @@ Read this first after an interruption. Detailed history lives in the
 ## Current state
 
 **20 October Material 3 polish (#79, PR #84):** slider and range-slider tracks span the thumb's whole
-travel (they stopped 19 dp short of each end); the showcase's mini player and wide-window hero are fixed.
-New `GlassSliderTrackTest` (red before, green after); material3 suite 18/18; ABI unchanged; inspected
-desktop, Pixel 7 and browser captures. [Evidence](../review/atlas/material3-polish-2026-10-20/README.md).
+travel; they stopped half a thumb short of each end (19 dp, derived from the authored 38 dp thumb;
+`GlassSliderTrackTest` measured 19 px at density 1 before the fix, red before and green after). The
+showcase's mini player and wide-window hero are fixed (authored layout values). Regression pass: material3
+suite 18 of 18, ABI unchanged. Every component on the page, overlays included, inspected on desktop, a
+Pixel 7 and in the browser. [Evidence](../review/atlas/material3-polish-2026-10-20/README.md).
 
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,

@@ -51,6 +51,26 @@ ANGLE/D3D11 (AMD Radeon integrated graphics), served locally. Before: `origin/ma
 at device scale 2; captured 2 s after the first frame with app pixels in it. A local build, not the live
 site, whose loading is #78.*
 
+## The menu, dialog, sheet and tooltip
+
+These open on interaction, so the renders above do not show them. Each was opened on the showcase in
+the browser and inspected; none had a defect, and none is changed here.
+
+![The showcase in the browser with each overlay open: the More menu under its anchor, the "Play Glasshouse next?" dialog, the Up next sheet at its half-window stop, and the "Switch to dark" tooltip under the star](web-overlays.png)
+
+*The web demo (`ec13798`), `#material3`, headless Chrome 152 on ANGLE/D3D11, 1280 × 800, scaled to half.
+Menu: a click on More. Dialog and sheet: More, then "Play next" or "Queue". The sheet opens at its
+half-window stop (the documented partially expanded state) and the rest is reached by dragging it up.
+Tooltip: a mouse hover on the star, captured 0.6 s later; Material's non-persistent tooltip hides
+itself after about 1.5 s.*
+
+![The same three overlays in GlassMaterialComponentsTest's own test app on the desktop: a glass menu under its anchor, a dialog and a sheet](desktop-overlays.png)
+
+*Desktop JVM Skia raster, `GlassMaterialComponentsTest.buttonsClickAndOverlaysOpenAndDismiss`
+(390 × 700 dp at density 1), which also checks that each one opens and dismisses; this change's
+working tree before commit `3fcc9a7`. `togglesToggleAndALongPressShowsATooltip` checks the tooltip by a
+touch long press; it saves no image.*
+
 ## The new renders
 
 | Light | Dark |
@@ -76,7 +96,6 @@ hero images and, scaled to 780 × 1688, `docs/assets/material3-light.png` / `-da
 
 - The renders are desktop Skia, the device capture is Android and the browser captures are one engine
   (Chrome on Windows). Firefox, Safari and phone browsers were not captured.
-- The other components visible on the page (top bar, segmented control, buttons, chips, tab bar)
-  were inspected in all six renders and against the 18 October Pixel 7 captures; no other defect was
-  found. That is an inspection, not a measurement. The menu, dialog, sheet and tooltip open on
-  interaction and were not re-inspected here; `GlassMaterialComponentsTest` still drives them.
+- The other components on the page (top bar, segmented control, buttons, chips, tab bar, and the menu,
+  dialog, sheet and tooltip above) were inspected in the renders, the browser captures and against the
+  18 October Pixel 7 captures; no other defect was found. That is an inspection, not a measurement.
