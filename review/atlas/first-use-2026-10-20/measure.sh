@@ -25,7 +25,8 @@ print(len(d), round(max(d),1), sum(1 for x in d if x>11.1))"
 for i in $(seq 1 $runs); do
   $A shell am force-stop $PKG
   if [ "${CLEAR:-0}" = 1 ]; then $A shell pm clear $PKG >/dev/null; fi
-  $A shell am start -W -n $PKG/.PhoneActivity ${EXTRAS:-} >/dev/null
+  read -r -a extras <<< "${EXTRAS:-}"
+  $A shell am start -W -n $PKG/.PhoneActivity "${extras[@]}" >/dev/null
   sleep 3
   $A shell dumpsys gfxinfo $PKG reset >/dev/null
   $A shell input tap $3 $4

@@ -550,8 +550,10 @@ internal fun Modifier.liquidGlassCore(
                 // Coordinate contract: the recorded layer, the shader's pad uniform, the sampled
                 // field and the draw-back translate all use this one pad (see recordPad).
                 val rs = state.renderScale.coerceIn(0.25f, 1f)
-                val pad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx)
-                    .let { if (poseBody != null || body != null) padFloor.hold(it) else it }
+                // A diagnostic pad override is taken as given, never raised by the held floor.
+                val pad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx).let {
+                    if ((poseBody != null || body != null) && LiquidGlassDiagnostics.recordPadOverridePx == null) padFloor.hold(it) else it
+                }
                 val useEndpoint = endpointComposite && refractContent && LiquidGlassSupport.hasShaders
                 val sizeFactor = elementSizeFactor(size, this)
                 val tintDrawing=tintWithinThrough?.drawing
