@@ -5,6 +5,14 @@ Full iOS parity is not established: the measured differences are open as issues 
 accepted the navigation selector on 20 October. Historical
 research remains available; this page identifies which later changes supersede its implementation.
 
+## Material 3 polish (20 October, #79)
+
+- `Slider` and `RangeSlider` tracks run under the thumb's whole travel; they stopped half a thumb short
+  of each end. `GlassSliderTrackTest` pins it. The showcase's mini player is inset from the card's edge
+  and shows a pause glyph; its hero cover is capped at 280 dp on wide windows. Desktop Skia renders before
+  and after, and a Pixel 7 capture: [evidence](https://github.com/shayann07/liquidglass/blob/main/review/atlas/material3-polish-2026-10-20/README.md).
+  The web build was not captured (#78).
+
 ## 1.0 (20 October)
 
 - **Parity scoreboard.** All five iOS recordings replayed through the 1.0 build and scored in display

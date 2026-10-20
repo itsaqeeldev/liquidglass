@@ -66,8 +66,8 @@ import com.wexpa.liquidglass.material3.NavigationBarItem
 ```
 
 <p align="center">
-  <img src="review/atlas/showcase-2026-10-19/showcase-scrolled-light.png" width="300" alt="A Material 3 music app in glass, light scheme: glass top bar, segmented control, buttons, chips, a frosted mini player and the floating tab bar over album art">
-  <img src="review/atlas/showcase-2026-10-19/showcase-scrolled-dark.png" width="300" alt="The same app, dark scheme">
+  <img src="review/atlas/material3-polish-2026-10-20/showcase-scrolled-light.png" width="300" alt="A Material 3 music app in glass, light scheme: glass top bar, segmented control, buttons, chips, a frosted mini player and the floating tab bar over album art">
+  <img src="review/atlas/material3-polish-2026-10-20/showcase-scrolled-dark.png" width="300" alt="The same app, dark scheme">
 </p>
 
 ### Web, React Native, Flutter, .NET

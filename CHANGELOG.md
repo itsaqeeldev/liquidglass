@@ -6,6 +6,12 @@ A version heading means that version is published; anything above the newest one
 Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>), uploaded by hand on
 20 October; later tags publish it from the release workflow.
 
+- Material 3: the `Slider` and `RangeSlider` tracks run under the thumb's whole travel, as iOS's do.
+  They stopped half a thumb short of each end, so the thumb hung past the track. The showcase's mini
+  player keeps its controls clear of the card's edge and shows a pause glyph while playing, and its
+  hero cover is capped at 280 dp on wide windows, where it filled the screen with sky (#79).
+  [Evidence](review/atlas/material3-polish-2026-10-20/README.md).
+
 ## 1.0.0 (2026-10-20)
 
 The first release with a compatibility promise ([support and compatibility](docs/compatibility.md)):

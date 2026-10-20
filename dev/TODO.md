@@ -46,14 +46,16 @@ description fix alone.
   full padded resolution during composition and before the `hasShaders` check; skip it without shaders,
   reuse EDT scratch buffers, fix docs/shapes.md ("half resolution" is the output, not the computation),
   then consider a bounded-resolution or off-composition build; odd-pad and field-consumer tests stay gates.
-- [ ] **#78 / #79 Web demo (liquidglass.shayxo.dev/demo/): slow, sometimes blank (#78); Material 3 components need polish (#79). Owner, 20 Oct.**
-  The Wasm demo shows a black page for a long time on first load, sometimes never renders, and several
-  Material 3 components look visually wrong (owner screenshot of #material3: the mini player's slider
-  thumb sits outside its track, the switch and refresh button crowd the card edge, the "Recently played"
-  hero is one huge empty gradient). Next: measure load (bundle size, time to first frame, console errors)
-  in Chromium; add a loading state; find the failed-render cause; then audit every component on the
-  #material3 page against the Pixel 7 captures (review/atlas/android-material3-2026-10-18) and fix,
-  with before/after evidence under review/.
+- [ ] **#78 Web demo (liquidglass.shayxo.dev/demo/): slow, sometimes blank. Owner, 20 Oct.**
+  The Wasm demo shows a black page for a long time on first load and sometimes never renders. Next:
+  measure load (bundle size, time to first frame, console errors) in Chromium; add a loading state;
+  find the failed-render cause; before/after numbers under review/.
+- [x] **#79 Material 3 polish (itsaqeeldev, 20 Oct).** Slider/RangeSlider tracks now run under the
+  thumb's whole travel (they stopped half a thumb short: Material insets the track box by half a
+  thumb and the glass track inset again); `GlassSliderTrackTest` failed before, passes after. Showcase:
+  mini player inset 20 x 14 dp with a gap before the switch and a pause glyph; hero capped at 280 dp
+  on wide windows. Desktop renders before/after, Pixel 7 capture, material3 suite 18/18:
+  review/atlas/material3-polish-2026-10-20. Web build not captured (#78).
 - [ ] **#77 Refraction reads weaker than iOS (owner review, 20 Oct).** The owner watched the selector
   side-by-side page (.local/review-selector, iOS beside p20) and is about 90% satisfied, but says
   our refraction feels much weaker than in the recordings. Next: measure displacement (how far the
