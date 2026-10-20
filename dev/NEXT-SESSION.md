@@ -2,11 +2,19 @@
 
 ## Compose cache/field fixes and PR #83 review follow-up (20 October)
 
+CodeRabbit follow-up on `1654e90`: a fractional `recordPad` was incorrectly rounded again.
+The red regression reproduced a 145/146-pixel extent mismatch at renderScale 0.75. The fix
+preserves recording-grid padding exactly; size stays rounded to layout pixels. All 21 focused
+tests/probes pass (41s), including scales 1, 0.75, 0.6, 0.5 and 0.25, and inspected fractional-pad
+field evidence. Full renderer verification passes: 428 total, 401 passed, 27 opt-in skips, zero failures/errors
+(28m45s). Android, Wasm, ABI, strict docs and all 139 repository links pass.
+KDoc now describes changed lifecycle, buffer and test contracts. Keep #81 open for deferred work.
+
 #80 and #82 are implemented; #81's capability guard, scratch reuse and documentation are done.
 Bounded-resolution/off-composition work remains open. Review changes cap retained buffers at
-256k pixels (~4.25 MiB), round size/pad once for both cache and construction, add root-region and
+256k pixels (~4.25 MiB), use matching size/pad for both cache and construction, add root-region and
 pool-fallback regressions, and declare coroutines directly. Focused checks and the updated probe
-pass (22 tests); the full renderer run passes with 427 tests, zero failures/errors and 27 opt-in
+pass on the earlier `1654e90` checkpoint (22 tests); its full renderer run passes with 427 tests, zero failures/errors and 27 opt-in
 skips (one worker, 27m04s). Android sample, Wasm, ABI and strict docs/link checks also pass.
 The updated allocation result is
 72.5% lower for a small pooled field and 30% lower for large fields using temporary buffers;

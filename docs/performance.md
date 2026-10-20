@@ -6,8 +6,9 @@ Nested themes now retain and mirror only views with active consumers. Settings c
 superseded views; shared settings stay live until the last consumer is forgotten or abandoned.
 
 Custom-path fields are skipped on shader-incapable backends. Their cache key and construction use
-the same whole-pixel rounded size and padding, so sub-pixel changes within a rounding bucket reuse
-the field without allowing equal padded dimensions to hide different inner geometry.
+the same whole-pixel size and exact recorded padding. Padding is already quantized to the render-scale
+grid, so style changes within a grid bucket reuse the field. Fractional recorded padding remains
+aligned with the shader; equal padded dimensions cannot hide different inner geometry.
 A bounded workspace reuses the full-resolution distance-transform arrays. One workspace retains at
 most 262,144 pixels of scratch storage (approximately 4.25 MiB of primitive arrays). Larger or
 concurrent builds use temporary buffers rather than blocking or growing that retained workspace.

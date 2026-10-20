@@ -6,6 +6,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 private const val FIELD_SCALE_BASELINE = 2
+/** Builds the upstream allocation baseline; added documentation does not change its algorithm. */
 internal fun buildPathFieldBaseline(
     path: Path,
     layerWidth: Int,
@@ -91,6 +92,7 @@ private fun signedDistanceBaseline(inside: BooleanArray, w: Int, h: Int): FloatA
 
 private const val FAR_BASELINE = 1e9f
 
+/** Computes upstream distances with fresh arrays on every pass for the allocation comparison. */
 private fun edtBaseline(inside: BooleanArray, w: Int, h: Int, seedInside: Boolean): FloatArray {
     val dx = FloatArray(w * h)
     val dy = FloatArray(w * h)
@@ -105,6 +107,7 @@ private fun edtBaseline(inside: BooleanArray, w: Int, h: Int, seedInside: Boolea
         }
     }
 
+    /** Propagates a nearer seed using the unchanged upstream distance comparison. */
     fun compare(i: Int, ox: Int, oy: Int, sx: Int, sy: Int) {
         val nx = i + ox + oy * w
         if (nx < 0 || nx >= w * h) return

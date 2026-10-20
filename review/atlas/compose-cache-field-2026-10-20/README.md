@@ -1,8 +1,8 @@
 # Compose cache and field maintenance
 
 Implementation based on upstream `4cd5ed8` (20 October 2026), addressing issues 80–82.
-PR #83's review follow-up lowers retained storage and rounds cache/build inputs consistently to
-whole layer pixels. No shader, material parameter, motion constant, field resolution or published
+PR #83's review follow-up lowers retained storage and uses matching cache/build inputs:
+whole-pixel size and exact recording-grid padding. No shader, material parameter, motion constant, field resolution or published
 API change.
 
 ## Changes
@@ -10,9 +10,10 @@ API change.
 - A remembered lease reference-counts views of the shared backdrop. Changing settings or leaving
   composition releases it; abandonment before effects run also releases the acquisition. Multiple
   active consumers share a view. Only active views are mirrored.
-- Sampled-field keys include whole-pixel rounded size and pad; outline construction and rasterization
-  consume exactly those same values. Sub-pixel changes inside a rounding bucket reuse the field;
-  equal padded dimensions cannot hide different rounded inner geometry.
+- Sampled-field keys include whole-pixel rounded size and exact recorded pad; outline construction
+  and rasterization consume those same values. Padding is quantized only by `recordPad`, on the
+  render-scale grid, to preserve the shader's origin. Style changes inside a grid bucket reuse
+  the field; equal padded dimensions cannot hide different inner geometry.
 - Shader-incapable backends skip field preparation.
 - The full-resolution EDT uses reusable `inside`, `dx`, `dy`, distance and outer-distance buffers.
   The second transform reuses the first transform's working arrays; published bitmaps own their
@@ -125,7 +126,7 @@ Output: `liquidglass/build/reports/atlas/compose-cache-field/field-cache.png`.
 - No physical-device run. Existing field/odd-pad render checks are the optical gates for this
   maintenance change; screenshots are not timing evidence.
 
-## Review follow-up verification
+## Review follow-up verification (`1654e90`, historical pad rounding)
 
 - Added regression coverage for sub-pixel pad/size reuse, rounding-boundary invalidation and
   pixel equality with a build using the rounded inputs; existing equal-padded-size regression
@@ -148,3 +149,31 @@ Output: `liquidglass/build/reports/atlas/compose-cache-field/field-cache.png`.
 - The maintainer separately reported the initial `c1d2b5a` suite passing on Windows/JDK 21:
   423 tests, zero failures, 27 opt-in skips. This is reviewer-reported evidence for the initial
   revision, not a substitute for the current local verification.
+
+## CodeRabbit fractional-padding follow-up
+
+The previous checkpoint rounded `recordPad` to an integer before building a field. At a reduced
+render scale, that value is already quantized to the recording grid and can be fractional in
+layer coordinates. For a 22.1 px requirement at scale 0.75, `recordPad` returns 22.666667 px;
+rounding it to 23 moves the field away from the shader's origin.
+
+The fix retains the exact recorded pad in both the key and rasterization. Size remains rounded
+to whole layout pixels. The transform algorithm, scratch policy and shader formulas are unchanged,
+so the existing integer-geometry allocation measurements above remain applicable.
+
+- Red regression on `1654e90`: expected layer width 145, actual 146. Raw test output was archived.
+- Green focused run: **21 tests/probes, zero failures/errors/skips in 41s**. Production `recordPad`
+  supplies the test inputs. Scales 1, 0.75, 0.6, 0.5 and 0.25 match fresh reference fields texel
+  for texel. Within-grid style changes reuse the field; crossing a pad or size bucket rebuilds.
+- Full `:liquidglass:jvmTest --rerun`: **428 tests, 401 passed, 27 opt-in showcase skips,
+  zero failures/errors**. The combined command took 28m45s with one 768 MiB test worker and
+  `--max-workers=2`; Android sample assembly, Wasm compilation and Kotlin ABI checks also pass.
+  No assertions or timeouts were relaxed. Strict MkDocs and all 139 repository/visual links pass.
+
+![Fractional padding origin, previous and corrected fields against reference](fractional-pad.png)
+
+Source: working-tree follow-up to `1654e90`, Desktop JVM/Skia on Windows, JDK 25.0.3.
+Capture: opt-in `CacheFieldVisualTest.renderFractionalPaddingOrigin`, using the production
+Compose helper and a fresh direct-build reference. The left field reconstructs the former
+double rounding. Real SDF texels are enlarged 4× and inspected; fixed/reference texels match exactly.
+This is a field diagnostic, not an app/device screenshot, frame-time measurement or owner acceptance.

@@ -1,15 +1,19 @@
 package com.wexpa.liquidglass
 
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class GlassPathFieldCacheRegressionTest {
+    /** Unsupported backends must skip even outline construction, not merely discard its field. */
     @Test fun disabledBackendDoesNotCreateAnOutline() = runComposeUiTest {
         val shape = object : Shape {
             override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
@@ -24,6 +28,7 @@ class GlassPathFieldCacheRegressionTest {
         assertNull(field)
     }
 
+    /** Equal bitmap extents must not hide changes to the inner outline and its translation. */
     @Test fun equalPaddedDimensionsReuseDifferentGeometry() = runComposeUiTest {
         val density = Density(1f)
         var outlineCalls = 0
@@ -74,7 +79,8 @@ class GlassPathFieldCacheRegressionTest {
         assertSame(correct, result)
     }
 
-    @Test fun subpixelGeometryReusesFieldUntilRoundedInputsChange() = runComposeUiTest {
+    /** Keeps cache reuse on the recording grid without moving fractional shader origins. */
+    @Test fun subpixelGeometryReusesFieldUntilRecordingGridInputsChange() = runComposeUiTest {
         val density = Density(1f)
         val outlines = mutableListOf<Size>()
         val shape = object : Shape {
@@ -88,26 +94,32 @@ class GlassPathFieldCacheRegressionTest {
             }
         }
         var size by mutableStateOf(Size(100.1f, 60.1f))
-        var pad by mutableFloatStateOf(10.1f)
+        var blur by mutableFloatStateOf(22.1f)
         var result: GlassPathField? = null
+        /** Exercises production style padding, including its render-scale quantization. */
+        fun recordedPad() = GlassStyle(blurRadius = blur.dp).recordPad(
+            FloatArray(4), size, null, density, renderScale = 0.75f
+        )
         setContent {
-            val field = rememberGlassPathField(shape, size, pad, 16f, density,
+            val field = rememberGlassPathField(shape, size, recordedPad(), 16f, density,
                 LayoutDirection.Ltr, enabled = true)
             SideEffect { result = field }
         }
         waitForIdle()
         val first = result
-        runOnIdle { pad = 10.4f }; waitForIdle()
-        assertSame(first, result, "Sub-pixel pad changes within a pixel bucket must reuse the EDT")
+        assertEquals(17f / 0.75f, recordedPad())
+        runOnIdle { blur = 22.4f }; waitForIdle()
+        assertSame(first, result, "Style changes within a recording-grid bucket must reuse the EDT")
         runOnIdle { size = Size(100.4f, 60.4f) }; waitForIdle()
         assertSame(first, result)
         assertEquals(listOf(Size(100f, 60f)), outlines)
 
-        fun assertMatchesRoundedBuild(expectedSize: Size, expectedPad: Float) {
+        /** Checks geometry and every texel against an uncached build at the shader's origin. */
+        fun assertMatchesRecordedBuild(expectedSize: Size, expectedPad: Float) {
             assertEquals(expectedSize, outlines.last())
             val path = (shape.createOutline(expectedSize, LayoutDirection.Ltr, density) as Outline.Generic).path
-            val fresh = buildPathField(path, (expectedSize.width + 2 * expectedPad).toInt(),
-                (expectedSize.height + 2 * expectedPad).toInt(), expectedPad, 16f)!!
+            val fresh = buildPathField(path, (expectedSize.width + 2 * expectedPad).roundToInt(),
+                (expectedSize.height + 2 * expectedPad).roundToInt(), expectedPad, 16f)!!
             assertEquals(fresh.layerWidth, result!!.layerWidth)
             assertEquals(fresh.layerHeight, result!!.layerHeight)
             val actual = result!!.bitmap.toPixelMap()
@@ -116,12 +128,47 @@ class GlassPathFieldCacheRegressionTest {
                 assertEquals(reference[x, y], actual[x, y])
             }
         }
-        runOnIdle { pad = 10.6f }; waitForIdle()
+        assertMatchesRecordedBuild(Size(100f, 60f), 17f / 0.75f)
+        runOnIdle { blur = 22.8f }; waitForIdle()
         assertNotSame(first, result)
-        assertMatchesRoundedBuild(Size(100f, 60f), 11f)
+        assertMatchesRecordedBuild(Size(100f, 60f), 24f)
         val changedPad = result
         runOnIdle { size = Size(100.6f, 60.6f) }; waitForIdle()
         assertNotSame(changedPad, result)
-        assertMatchesRoundedBuild(Size(101f, 61f), 11f)
+        assertMatchesRecordedBuild(Size(101f, 61f), 24f)
+    }
+
+    /** Scale changes must preserve each recording-grid origin, including fractional layer pixels. */
+    @Test fun fractionalPaddingMatchesFreshFieldAcrossRenderScales() = runComposeUiTest {
+        val density = Density(1f)
+        val size = Size(100f, 60f)
+        val shape = GenericShape { s, _ ->
+            moveTo(0f, 0f); lineTo(s.width / 2, 12f)
+            lineTo(s.width, 0f); lineTo(s.width, s.height)
+            lineTo(0f, s.height); close()
+        }
+        var scale by mutableFloatStateOf(1f)
+        var result: GlassPathField? = null
+        val style = GlassStyle(blurRadius = 22.1.dp)
+        setContent {
+            val pad = style.recordPad(FloatArray(4), size, null, density, scale)
+            val field = rememberGlassPathField(shape, size, pad, 16f, density,
+                LayoutDirection.Ltr, enabled = true)
+            SideEffect { result = field }
+        }
+        for (next in listOf(1f, 0.75f, 0.6f, 0.5f, 0.25f)) {
+            runOnIdle { scale = next }; waitForIdle()
+            val pad = style.recordPad(FloatArray(4), size, null, density, next)
+            val path = (shape.createOutline(size, LayoutDirection.Ltr, density) as Outline.Generic).path
+            val fresh = buildPathField(path, (size.width + pad * 2).roundToInt(),
+                (size.height + pad * 2).roundToInt(), pad, 16f)!!
+            assertEquals(fresh.layerWidth, result!!.layerWidth, "renderScale=$next pad=$pad")
+            assertEquals(fresh.layerHeight, result!!.layerHeight)
+            val expected = fresh.bitmap.toPixelMap()
+            val actual = result!!.bitmap.toPixelMap()
+            for (y in 0 until expected.height) for (x in 0 until expected.width) {
+                assertEquals(expected[x, y], actual[x, y], "renderScale=$next pixel=$x,$y")
+            }
+        }
     }
 }

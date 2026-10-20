@@ -7,8 +7,9 @@ research remains available; this page identifies which later changes supersede i
 
 ## Compose maintenance on main
 
-Issues #80 and #82 are addressed by active nested-theme view lifetime and matching whole-pixel
-cache/build geometry. The first part of #81 adds shader-capability gating and transform-buffer
+Issues #80 and #82 are addressed by active nested-theme view lifetime and matching
+cache/build geometry: whole-pixel size and exact recording-grid padding, including fractional
+origins at reduced render scales. The first part of #81 adds shader-capability gating and transform-buffer
 reuse capped at 256k retained pixels (~4.25 MiB). Larger fields use temporary storage.
 Bounded-resolution/asynchronous field preparation remains open under #81. Measurements are desktop
 allocation evidence, not physical-device frame-time evidence; synchronous field cost remains.

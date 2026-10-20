@@ -8,6 +8,7 @@ import java.util.concurrent.Executors
 import kotlin.test.*
 
 class GlassPathFieldBufferTest {
+    /** A field above the retention cap must leave the bounded shared workspace unchanged. */
     @Test fun oversizedBuildDoesNotGrowOrReplaceRetainedWorkspace() {
         val limit = 256 * 1024
         val retained = GlassPathFieldBufferPool.use(limit.toLong()) {
@@ -25,6 +26,7 @@ class GlassPathFieldBufferTest {
         }
     }
 
+    /** A busy pool falls back without aliasing, and exceptions cannot strand its lock. */
     @Test fun busyPoolUsesIndependentWorkspaceAndReleasesAfterFailure() {
         var retained: GlassPathFieldBuffers? = null
         assertFailsWith<IllegalStateException> {
@@ -45,11 +47,13 @@ class GlassPathFieldBufferTest {
         GlassPathFieldBufferPool.use(100) { assertSame(retained, it) }
     }
 
+    /** Builds an asymmetric notch so stale scratch data affects more than rectangular edges. */
     private fun path(w: Int, h: Int, notch: Int) = Path().apply {
         moveTo(0f, 0f); lineTo(w / 2f, notch.toFloat()); lineTo(w.toFloat(), 0f)
         lineTo(w.toFloat(), h.toFloat()); lineTo(0f, h.toFloat()); close()
     }
 
+    /** Extracts the encoded distance channel for exact comparisons between published fields. */
     private fun pixels(bitmap: ImageBitmap): List<Int> {
         val map = bitmap.toPixelMap()
         return List(map.width * map.height) { i ->
@@ -57,6 +61,7 @@ class GlassPathFieldBufferTest {
         }
     }
 
+    /** Alternating geometry must match fresh storage and never mutate previously published bitmaps. */
     @Test fun reusedBuffersMatchFreshBuildsAcrossShapesSizesAndOddPadding() {
         val buffers = GlassPathFieldBuffers()
         var previous: GlassPathField? = null
@@ -78,6 +83,7 @@ class GlassPathFieldBufferTest {
         }
     }
 
+    /** Capacity growth is monotonic so a smaller field allocates no replacement scratch planes. */
     @Test fun smallerBuildsReuseTransformArrays() {
         val buffers = GlassPathFieldBuffers()
         buffers.ensureCapacity(1000)
@@ -94,6 +100,7 @@ class GlassPathFieldBufferTest {
         assertSame(outer, buffers.outer)
     }
 
+    /** Parallel production builds must produce the same fields as exclusive fresh workspaces. */
     @Test fun concurrentBuildsMatchIndependentWorkspaces() {
         val executor = Executors.newFixedThreadPool(4)
         try {

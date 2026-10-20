@@ -39,9 +39,12 @@ No 1.0.1: the owner decided on 20 Oct to ship these together as 1.1.0 rather tha
 description fix alone.
 
 - [x] **#80 / #82 and the first part of #81 (itsaqeeldev, 20 Oct), for 1.1.0.** Active-consumer
-  view lifetime, matching whole-pixel cache/build geometry, shader-capability gating, bounded EDT
+  view lifetime, matching cache/build geometry (whole-pixel size, exact recording-grid padding),
+  shader-capability gating, bounded EDT
   scratch reuse and corrected documentation are implemented with regression tests. The retained
   workspace is capped at 256k pixels (~4.25 MiB); larger builds use temporary arrays.
+  CodeRabbit fractional-padding correction passes 21 focused checks and the full suite
+  (428 total, 401 passed, 27 opt-in skips, zero failures/errors); Android/Wasm/ABI/docs checks pass.
   Verification and historical results: `review/atlas/compose-cache-field-2026-10-20/README.md`.
 - [ ] **#81 follow-up:** bounded-resolution or off-composition field preparation. Full-resolution
   EDT remains synchronous; odd-pad and field-consumer tests stay gates.

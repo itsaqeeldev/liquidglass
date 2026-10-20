@@ -12,6 +12,7 @@ import kotlin.test.*
 
 @OptIn(ExperimentalTestApi::class)
 class GlassRegionLifecycleTest {
+    /** Replacing root settings disposes old leases and attaches nested consumers to the new recording. */
     @Test fun rootSettingsReplacementReleasesOldRegionWithNestedConsumersAlive() = runComposeUiTest {
         var rootLevel by mutableFloatStateOf(0f)
         var show by mutableStateOf(true)
@@ -41,6 +42,7 @@ class GlassRegionLifecycleTest {
         assertTrue(root.layers.isEmpty())
     }
 
+    /** Matching consumers share a live view whose recording follows root size changes. */
     @Test fun sharedSettingsSurviveUntilTheirLastConsumerLeaves() = runComposeUiTest {
         var first by mutableStateOf(true)
         var second by mutableStateOf(true)
@@ -80,6 +82,7 @@ class GlassRegionLifecycleTest {
         assertTrue(root.views.isEmpty())
     }
 
+    /** Portal and overlay consumers release both their settings views and registered layers. */
     @Test fun portalAndOverlayConsumersReleaseTheirViews() = runComposeUiTest {
         var show by mutableStateOf(true)
         lateinit var root: GlassRegion
@@ -101,6 +104,7 @@ class GlassRegionLifecycleTest {
         assertTrue(root.layers.isEmpty())
     }
 
+    /** Abandonment releases exactly one reference even if Compose repeats the notification. */
     @Test fun abandonedLeaseReleasesOnlyItsOwnReference() {
         val region = GlassRegion(LiquidGlassState(Color.Black, 0f, 0f, 0f, 1f))
         val defaults = GlassDefaults(true, Glass.Regular, 20.dp, reduceTransparency = .5f)
@@ -119,6 +123,7 @@ class GlassRegionLifecycleTest {
         next.onForgotten()
     }
 
+    /** Repeated settings changes retain only current consumers, with no historical views after disposal. */
     @Test fun releasesHistoricalViewsAfterDisposal() = runComposeUiTest {
         var level by mutableFloatStateOf(0f)
         var show by mutableStateOf(true)

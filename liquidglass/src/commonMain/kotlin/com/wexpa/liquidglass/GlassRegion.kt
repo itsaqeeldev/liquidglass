@@ -169,12 +169,14 @@ internal class GlassRegion(val state: LiquidGlassState) {
     val views = HashMap<Triple<Float, Float, Float>, LiquidGlassState>()
     private val consumers = HashMap<Triple<Float, Float, Float>, Int>()
 
+    /** Holds one view reference for this consumer until its keys change or composition ends. */
     @Composable
     fun rememberStateFor(d: GlassDefaults): LiquidGlassState =
         remember(this, d.reduceTransparency, d.increaseContrast, d.renderScale) {
             GlassViewLease(this, d)
         }.state
 
+    /** Shares an active settings view, or uses the root state when its settings already match. */
     internal fun acquire(d: GlassDefaults): LiquidGlassState {
         if (d.reduceTransparency == state.frost && d.increaseContrast == state.contrast && d.renderScale == state.renderScale) return state
         val key = Triple(d.reduceTransparency, d.increaseContrast, d.renderScale)
@@ -187,6 +189,7 @@ internal class GlassRegion(val state: LiquidGlassState) {
         return view
     }
 
+    /** Drops one acquired reference and removes a settings view after its final consumer leaves. */
     internal fun release(view: LiquidGlassState) {
         if (view === state) return
         val key = Triple(view.frost, view.contrast, view.renderScale)
@@ -215,9 +218,13 @@ internal class GlassRegion(val state: LiquidGlassState) {
 internal class GlassViewLease(private val region: GlassRegion, defaults: GlassDefaults) : RememberObserver {
     val state = region.acquire(defaults)
     private var released = false
+    /** Acquisition already happened during construction so same-composition siblings share it. */
     override fun onRemembered() = Unit
+    /** Releases the reference on disposal or replacement of a remember key. */
     override fun onForgotten() = release()
+    /** Releases acquisitions from compositions that never reached the effects phase. */
     override fun onAbandoned() = release()
+    /** Makes repeated lifecycle notifications harmless to other consumers of the same view. */
     private fun release() {
         if (!released) {
             released = true

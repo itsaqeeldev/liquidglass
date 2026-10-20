@@ -11,8 +11,9 @@ Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>
 - Skip custom-path field generation without shaders and reuse bounded distance-transform scratch
   buffers. Full-resolution geometry and odd-pad alignment are preserved; computation is still
   synchronous. Correct the half-resolution documentation and add an opt-in allocation probe (#81).
-- Key and build remembered path fields from the same whole-pixel size/padding so equal padded
-  dimensions cannot reuse stale geometry and sub-pixel changes within a rounding bucket reuse
+- Key and build remembered path fields from the same whole-pixel size and exact recording-grid
+  padding so equal padded dimensions cannot reuse stale geometry. Preserve fractional padding at
+  reduced render scales to match the shader's origin; style changes within a grid bucket reuse
   the field (#82). Cap retained transform buffers at 256k pixels (~4.25 MiB); oversized builds
   use temporary buffers (#81).
 - Verification and measurement limits:

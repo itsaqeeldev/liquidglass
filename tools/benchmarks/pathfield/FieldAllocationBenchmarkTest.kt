@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory
 import kotlin.test.*
 
 class FieldAllocationBenchmarkTest {
+    /** Checks texel equality before measuring paired JVM allocation and elapsed time across three sizes. */
     @Test fun compareBaselineFreshAndPooled() {
         val bean = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
         bean.isThreadAllocatedMemoryEnabled = true
@@ -15,6 +16,7 @@ class FieldAllocationBenchmarkTest {
                 moveTo(0f, 0f); lineTo(w*.4f, 0f); lineTo(w*.5f, 12f); lineTo(w*.6f, 0f)
                 lineTo(w.toFloat(), 0f); lineTo(w.toFloat(), h.toFloat()); lineTo(0f,h.toFloat()); close()
             }
+            /** Selects upstream, fresh optimized, or production pooled construction for the same path. */
             fun build(mode: Int) = when(mode) {
                 0 -> buildPathFieldBaseline(p, w+48, h+48, 24f, 48f)!!
                 1 -> buildPathField(p, w+48, h+48, 24f, 48f, GlassPathFieldBuffers())!!

@@ -6,7 +6,15 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
-**20 October PR #83 review follow-up:** capped retained storage at 256k pixels (~4.25 MiB);
+**20 October CodeRabbit follow-up to `1654e90`:** removed the second rounding of `recordPad`;
+the field now preserves the shader's fractional origin. Red regression: expected layer width 145,
+actual 146 at scale 0.75. Green focused run: 21 tests/probes, zero failures/errors/skips in 41s.
+Scales 1/0.75/0.6/0.5/0.25 match uncached reference fields exactly; within-grid style changes reuse
+the field. Added inspected Skia field-texel evidence and documented the affected function contracts.
+Full suite: 428 tests, 401 passed, 27 opt-in skips, zero failures/errors (28m45s). Android sample,
+Wasm, ABI, strict MkDocs and all 139 repository links pass. No assertions or timeouts changed.
+
+**20 October PR #83 review follow-up (`1654e90`, pad rounding superseded above):** capped retained storage at 256k pixels (~4.25 MiB);
 key and build now use the same whole-pixel rounded size/pad. Added root-region replacement,
 sub-pixel reuse/boundary and oversized/busy-pool regressions, explicit capability propagation
 and direct coroutines dependency. All 22 focused tests/probes pass in 1m28s. Full renderer run:
