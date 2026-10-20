@@ -168,6 +168,10 @@ scene that keeps moving under every piece of glass. `./gradlew :desktop:run`.
 
 ## Help wanted
 
+Unreleased Compose maintenance addresses nested-theme view retention and custom-path field caching
+and allocation. See the [performance notes](docs/performance.md#unreleased-compose-cache-and-field-fixes)
+for measurements and remaining limits.
+
 The maintainer has one Windows machine and one Android phone. If you have a Mac, a Samsung, Safari, or
 a Linux desktop with a real GPU, a ten-minute check helps a lot: see the
 [`needs-device` issues](https://github.com/shayann07/liquidglass/issues?q=is%3Aopen+label%3Aneeds-device).

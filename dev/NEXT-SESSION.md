@@ -1,5 +1,15 @@
 # Resume LiquidGlass / Atlas Studio
 
+## External-report implementation checkpoint (20 October)
+
+Reporter is implementing #80–#82 on `fix/compose-cache-and-field-cost`. Candidate source and
+focused regressions, Android/Wasm compilation and ABI check pass. The full renderer run recorded
+393 passes, 27 opt-in skips and three coroutine timeouts with four workers; all three timed-out
+cases pass on an unchanged-source, single-worker rerun. The field probe shows
+approximately 72.5% lower warmed Java allocations, with unchanged
+pixels in the measured cases and only small CPU-time differences. No release or physical-device
+claim. See `review/atlas/compose-cache-field-2026-10-20/README.md` for exact verification status.
+
 Updated 14 October 2026 (Claude takeover from Codex). The previous, longer handoff is preserved
 at commit `efcc3b5` and in `.local/handoffs/`. Full iOS parity and owner visual acceptance are
 **not** established. Read [TODO.md](TODO.md) and the full objective before changing source.

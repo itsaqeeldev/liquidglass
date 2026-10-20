@@ -1,5 +1,24 @@
 # Performance
 
+## Unreleased Compose cache and field fixes
+
+Nested themes now retain and mirror only views with active consumers. Settings changes release
+superseded views; shared settings stay live until the last consumer is forgotten or abandoned.
+
+Custom-path fields are skipped on shader-incapable backends. Their cache key includes the actual
+size and padding, not just the padded bitmap dimensions. The full-resolution geometry calculation
+is unchanged; a bounded workspace reuses its distance-transform arrays. One workspace retains at
+most 1,048,576 pixels of scratch storage (approximately 17 MiB of primitive arrays). Larger or
+concurrent builds use temporary buffers rather than blocking or growing that retained workspace.
+
+In a paired desktop JVM probe, warmed pooled builds allocated 4.32 MB versus 15.70 MB for a
+1080 × 300 px panel, and 9.53 MB versus 34.65 MB for 1080 × 720 px: approximately 72.5% less Java
+allocation. Fresh, unpooled builds also use fewer arrays. Output pixels matched the prior algorithm
+in the measured cases. Median CPU time changed only slightly; these results do not establish an
+Android frame-rate improvement or make animated path geometry inexpensive.
+
+[Method, raw numbers and reproducible benchmark](https://github.com/shayann07/liquidglass/blob/main/review/atlas/compose-cache-field-2026-10-20/README.md).
+
 ## Atlas wide and narrow windows — 18 October 2026
 
 Static-scene redraw submission (120 samples after 10 warmups; not presented FPS), three scenes per

@@ -6,6 +6,16 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
+**20 October external-report fixes (#80–#82):** candidate adds reference-counted remembered view
+leases (including abandonment), actual field-geometry keys, capability gating and bounded EDT
+scratch reuse. Two original reproductions failed before the fix; focused regressions pass.
+Paired large-field probe: about 72.5% less Java allocation after pool warmup, pixels unchanged in
+the measured cases, no Android FPS claim. Android sample, Wasm and ABI checks pass. Full-suite
+verification recorded 393 passes, 27 opt-in skips and three coroutine timeouts under four renderer
+workers. All three pass on an unchanged-source single-worker rerun, along with the packaged
+benchmark and inspected cache-field plot. The initial full invocation remains recorded as failed.
+Evidence: `review/atlas/compose-cache-field-2026-10-20/README.md`.
+
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,
 Atlas diagnostic commands and changelog. Future changes must update documentation and inspected

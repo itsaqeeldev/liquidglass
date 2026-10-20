@@ -5,6 +5,14 @@ Full iOS parity is not established: the measured differences are open as issues 
 accepted the navigation selector on 20 October. Historical
 research remains available; this page identifies which later changes supersede its implementation.
 
+## Unreleased Compose maintenance
+
+Issues #80–#82 have candidate fixes for active nested-theme view lifetime, sampled-field cache
+geometry, shader-capability gating and bounded transform-buffer reuse. The paired CPU probe
+measured about 72.5% fewer Java allocations for warmed large-field builds, with unchanged output
+pixels in its cases. This is not physical-device frame-time evidence; synchronous field cost remains.
+See [verification and limits](https://github.com/shayann07/liquidglass/blob/main/review/atlas/compose-cache-field-2026-10-20/README.md).
+
 ## 1.0 (20 October)
 
 - **Parity scoreboard.** All five iOS recordings replayed through the 1.0 build and scored in display
