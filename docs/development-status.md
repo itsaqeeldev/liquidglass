@@ -11,7 +11,7 @@ research remains available; this page identifies which later changes supersede i
   of each end. `GlassSliderTrackTest` pins it. The showcase's mini player is inset from the card's edge
   and shows a pause glyph; its hero cover is capped at 280 dp on wide windows. Desktop Skia renders before
   and after, and a Pixel 7 capture: [evidence](https://github.com/shayann07/liquidglass/blob/main/review/atlas/material3-polish-2026-10-20/README.md).
-  The web build was not captured (#78).
+  Browser captures of the web demo (Chrome) show the same fix.
 
 ## 1.0 (20 October)
 

@@ -55,7 +55,7 @@ description fix alone.
   thumb and the glass track inset again); `GlassSliderTrackTest` failed before, passes after. Showcase:
   mini player inset 20 x 14 dp with a gap before the switch and a pause glyph; hero capped at 280 dp
   on wide windows. Desktop renders before/after, Pixel 7 capture, material3 suite 18/18:
-  review/atlas/material3-polish-2026-10-20. Web build not captured (#78).
+  review/atlas/material3-polish-2026-10-20, with browser before/after (Chrome).
 - [ ] **#77 Refraction reads weaker than iOS (owner review, 20 Oct).** The owner watched the selector
   side-by-side page (.local/review-selector, iOS beside p20) and is about 90% satisfied, but says
   our refraction feels much weaker than in the recordings. Next: measure displacement (how far the

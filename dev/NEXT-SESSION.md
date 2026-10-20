@@ -4,6 +4,16 @@ Updated 14 October 2026 (Claude takeover from Codex). The previous, longer hando
 at commit `efcc3b5` and in `.local/handoffs/`. Full iOS parity and owner visual acceptance are
 **not** established. Read [TODO.md](TODO.md) and the full objective before changing source.
 
+## Material 3 polish, #79 (20 October, PR #84)
+
+Library: `Slider` and `RangeSlider` tracks stopped half a thumb (19 dp) short of each end, because
+Material lays the track out between the thumb's centre positions and the glass track inset again;
+they now draw half a thumb past both ends. `GlassSliderTrackTest` failed before ("the track starts
+19 px in") and passes after. Demo: the mini player is inset 20 x 14 dp with a gap before the switch and
+a pause glyph; the hero cover is capped at 280 dp on wide windows. `:liquidglass-material3:jvmTest`
+18/18, ABI unchanged; desktop renders before/after, a Pixel 7 capture and browser captures in
+review/atlas/material3-polish-2026-10-20. The menu, dialog, sheet and tooltip were not re-inspected.
+
 ## RELEASED: v1.0.0 (20 Oct 2026)
 
 Release PR #76 merged (4a71394) after CodeRabbit's review: the first-use TODO row stays open

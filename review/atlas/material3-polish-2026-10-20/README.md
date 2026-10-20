@@ -39,6 +39,18 @@ this change). `adb exec-out screencap -p`; the status bar is cropped off and the
 Right: `adb shell input swipe` along the track to each end (600 ms), captured 1.5 s after release and
 cropped to the mini player. adb input is not a finger.*
 
+## In the browser
+
+![Before and after in a 1280 x 800 browser window: the full-screen sky becomes a 280 dp banner with the sun in view, and the mini player gets its pause glyph and inset](web-wide.png)
+
+![Before and after at phone size in the browser: the mini player's refresh arrow and crowded switch, then the pause glyph, the gap and the inset; the slider track runs to both ends](web-phone.png)
+
+*The web demo (`apps/web`, Compose for Web on WebAssembly), `#material3`, in headless Chrome 152 on
+ANGLE/D3D11 (AMD Radeon integrated graphics), served locally. Before: `origin/main` at `4cd5ed8`; after:
+`ec13798`, this PR's head before these captures were added. 1280 × 800 at device scale 1, and 390 × 844
+at device scale 2; captured 2 s after the first frame with app pixels in it. A local build, not the live
+site, whose loading is #78.*
+
 ## The new renders
 
 | Light | Dark |
@@ -62,9 +74,8 @@ hero images and, scaled to 780 × 1688, `docs/assets/material3-light.png` / `-da
 
 ## Limits
 
-- The renders are desktop Skia and the device capture is Android. The web build draws with the same
-  Skia through Wasm and compiles with this change, but was not captured: the live demo's loading
-  failure is #78.
+- The renders are desktop Skia, the device capture is Android and the browser captures are one engine
+  (Chrome on Windows). Firefox, Safari and phone browsers were not captured.
 - The other components visible on the page (top bar, segmented control, buttons, chips, tab bar)
   were inspected in all six renders and against the 18 October Pixel 7 captures; no other defect was
   found. That is an inspection, not a measurement. The menu, dialog, sheet and tooltip open on

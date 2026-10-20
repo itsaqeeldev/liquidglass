@@ -6,6 +6,11 @@ Read this first after an interruption. Detailed history lives in the
 
 ## Current state
 
+**20 October Material 3 polish (#79, PR #84):** slider and range-slider tracks span the thumb's whole
+travel (they stopped 19 dp short of each end); the showcase's mini player and wide-window hero are fixed.
+New `GlassSliderTrackTest` (red before, green after); material3 suite 18/18; ABI unchanged; inspected
+desktop, Pixel 7 and browser captures. [Evidence](../review/atlas/material3-polish-2026-10-20/README.md).
+
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,
 Atlas diagnostic commands and changelog. Future changes must update documentation and inspected
