@@ -42,6 +42,7 @@
     // Starts the app, or says why it cannot start: a black page is never the answer (#78).
     (function () {
         var loader = document.getElementById('loader');
+        // Replaces the loader's text with what went wrong and a Reload link; the bar stops.
         function fail(title, detail) {
             loader.dataset.state = 'failed';
             document.getElementById('loader-title').textContent = title;
@@ -52,6 +53,7 @@
             again.onclick = function (e) { e.preventDefault(); location.reload(); };
             small.appendChild(again);
         }
+        // True until the app is ready or has failed: errors after that are not the loader's to report.
         function starting() { return loader.dataset.state !== 'ready' && loader.dataset.state !== 'failed'; }
         // The smallest module that declares a GC struct type (as wasm-feature-detect checks it).
         var gc = typeof WebAssembly === 'object' &&
@@ -71,11 +73,16 @@
         // Neither Compose nor Skiko restores a lost WebGL context, so the canvas would stay blank for good.
         // The canvas lives in Compose's shadow root, where the event does not reach window: listen on the
         // canvas itself, from the moment its context is created.
+        // A canvas is asked for its context more than once; one listener each is enough.
+        var watched = new WeakSet();
         var getContext = HTMLCanvasElement.prototype.getContext;
         HTMLCanvasElement.prototype.getContext = function (type) {
-            if (/webgl/.test(type)) this.addEventListener('webglcontextlost', function () {
-                fail('The graphics context was lost.', 'The GPU was reset or ran out of memory.');
-            });
+            if (/webgl/.test(type) && !watched.has(this)) {
+                watched.add(this);
+                this.addEventListener('webglcontextlost', function () {
+                    fail('The graphics context was lost.', 'The GPU was reset or ran out of memory.');
+                });
+            }
             return getContext.apply(this, arguments);
         };
         var script = document.createElement('script');

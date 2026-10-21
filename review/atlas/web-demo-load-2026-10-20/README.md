@@ -20,11 +20,13 @@ nothing on the page said which one was happening.
 
 - **A loader** (`index.html`) shows from the first paint, says what is being loaded, then "Preparing
   the glass" once the Wasm has started. Its bar is a transform animation, so it keeps moving while the
-  main thread is busy compiling shaders. `Main.kt` hides it once a frame follows the previous one within
-  100 ms, so the half-drawn shader-compile frames are not shown. After 60 frames without one it shows
-  the app anyway (logged to the console): a device that never draws a frame that fast would otherwise
-  keep the loader up for good. A failure reported meanwhile is never replaced by "ready" (review
-  follow-up after `ba932e2`; the measurements and screenshots are from `ba932e2`).
+  main thread is busy compiling shaders. `Main.kt` hides it once three frames in a row each follow the
+  previous one within 100 ms, so the half-drawn shader-compile frames are not shown (one quick frame can
+  come before a slow one). After 60 frames without that it shows the app anyway (logged to the console):
+  a device that never draws frames that fast would otherwise keep the loader up for good. A failure
+  reported meanwhile is never replaced by "ready". The context-loss listener is attached once per
+  canvas. (Review follow-ups after `ba932e2`; the measurement tables and the five state screenshots are
+  from `ba932e2`.)
 - **Compose has its own container** (`#app`). `ComposeViewport(document.body)` replaced the body's
   children, which would have removed the loader on mount.
 - **Failures are reported on the page** with a Reload link: no WebAssembly GC (checked before
@@ -54,6 +56,11 @@ The time until the app is usable is unchanged: it is the download plus the shade
 changed is that the page explains it from the first tenth of a second instead of staying black. Before
 the change the live site measured the same (`https://liquidglass.shayxo.dev/demo/#material3`: first
 frame at 18.0 s on fast 4G and 39.3 s on slow 4G, a single cold run each with a shared browser).
+
+**Re-check after the review follow-ups** (the three-frame settle, the once-per-canvas listener): the
+same script, three cold runs unthrottled and one on slow 4G. Loader at 62 / 49 / 45 ms, app visible at
+7.6 / 7.2 / 7.8 s; slow 4G 0.21 s and 30.8 s. The same as `ba932e2`, and the five states and the
+failure-during-settling case behave as before.
 
 ## The page's states
 
