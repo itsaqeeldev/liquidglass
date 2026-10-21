@@ -1071,6 +1071,7 @@ private fun DrawScope.drawAdded(layer: GraphicsLayer, dx: Float, dy: Float, shar
 internal class GlassPadFloor {
     private var pad = 0f
 
+    /** The pad to record with: [needed], or the largest pad held before if that is larger. */
     fun hold(needed: Float): Float {
         if (needed > pad) pad = needed
         return pad
