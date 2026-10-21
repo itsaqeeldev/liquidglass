@@ -22,6 +22,7 @@ import androidx.compose.ui.test.runDesktopComposeUiTest
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
@@ -33,8 +34,10 @@ import kotlin.time.Duration.Companion.minutes
  */
 @OptIn(ExperimentalTestApi::class)
 class GlassSliderTrackTest {
+    /** Pure red fill and pure blue track, so neither can be mistaken for the white thumb or the black ground. */
     private val colors @Composable get() = SliderDefaults.colors(activeTrackColor = Color.Red, inactiveTrackColor = Color.Blue)
 
+    /** [content] 300 dp wide on black at density 1, captured. */
     private fun track(content: @Composable () -> Unit): PixelMap {
         lateinit var pixels: PixelMap
         runDesktopComposeUiTest(400, 120, testTimeout = 2.minutes) {
@@ -53,7 +56,9 @@ class GlassSliderTrackTest {
         return pixels
     }
 
+    /** The fill (active track). */
     private fun Color.isRed() = red > .8f && green < .2f && blue < .2f
+    /** The track beyond the fill (inactive). */
     private fun Color.isBlue() = blue > .8f && red < .2f && green < .2f
 
     /** The extent of [match] along the row where the track is widest. */
@@ -63,6 +68,10 @@ class GlassSliderTrackTest {
         return xs.first()..xs.last()
     }
 
+    private fun PixelMap.count(match: (Color) -> Boolean) =
+        (0 until height).sumOf { y -> (0 until width).count { match(this[it, y]) } }
+
+    /** Midway, the fill starts at the slider's start and the track ends at its end. */
     @Test fun theSliderTrackRunsUnderTheThumbToBothEnds() {
         val pixels = track { Slider(value = .5f, onValueChange = {}, colors = colors) }
         val active = pixels.span { it.isRed() }
@@ -71,6 +80,31 @@ class GlassSliderTrackTest {
         assertTrue(inactive.last >= pixels.width - 3, "the track ends ${pixels.width - 1 - inactive.last} px short of the slider's end")
     }
 
+    /**
+     * At 0 the thumb sits at the start and covers the fill, which ends at its centre: no fill shows,
+     * and the track still runs to the slider's end.
+     */
+    @Test fun atZeroNoFillShowsAndTheTrackReachesTheEnd() {
+        val pixels = track { Slider(value = 0f, onValueChange = {}, colors = colors) }
+        assertEquals(0, pixels.count { it.isRed() }, "fill shows outside the thumb at 0")
+        val inactive = pixels.span { it.isBlue() }
+        assertTrue(inactive.first <= 38 + 3, "the track starts ${inactive.first} px in, not at the thumb's edge")
+        assertTrue(inactive.last >= pixels.width - 3, "the track ends ${pixels.width - 1 - inactive.last} px short of the slider's end")
+    }
+
+    /**
+     * At 1 the thumb sits at the end and the fill runs from the slider's start under it, so no track
+     * beyond the fill shows anywhere.
+     */
+    @Test fun atOneTheFillRunsFromTheStartToTheThumb() {
+        val pixels = track { Slider(value = 1f, onValueChange = {}, colors = colors) }
+        assertEquals(0, pixels.count { it.isBlue() }, "unfilled track shows outside the thumb at 1")
+        val active = pixels.span { it.isRed() }
+        assertTrue(active.first <= 2, "the fill starts ${active.first} px in, not at the slider's start")
+        assertTrue(active.last >= pixels.width - 38 - 3, "the fill stops ${pixels.width - 38 - 1 - active.last} px short of the thumb")
+    }
+
+    /** The range fill reaches both thumbs, and the track runs to both ends. */
     @Test fun theRangeSliderTrackRunsUnderBothThumbs() {
         val pixels = track { RangeSlider(value = .25f..(.75f), onValueChange = {}, colors = colors) }
         val inactive = pixels.span { it.isBlue() }

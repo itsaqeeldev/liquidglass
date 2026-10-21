@@ -86,7 +86,12 @@ hero images and, scaled to 780 × 1688, `docs/assets/material3-light.png` / `-da
 - `GlassSliderTrackTest` (new): renders `Slider` at 0.5 and `RangeSlider` at 0.25..0.75 in pure
   red/blue on black and scans the track's row. Before the fix both failed ("the track starts 19 px
   in"); after it, the track reaches both ends of the slider and the range fill reaches both thumbs.
-- `:liquidglass-material3:jvmTest`: 18 tests, 0 failures (catalogue 9, components 7, slider 2).
+- `GlassSliderTrackTest` also pins both ends with the thumb at rest (review follow-up): at 0 no fill
+  shows outside the thumb and the track reaches the slider's end; at 1 the fill runs from the start to the
+  thumb and no unfilled track shows. The fill ends at the thumb's centre at every value, so a held,
+  transparent lens shows fill under its left half at 0 and track under its right half at 1, as midway.
+  All four slider tests fail against the original inset track and pass with this change.
+- `:liquidglass-material3:jvmTest`: 20 tests, 0 failures (catalogue 9, components 7, slider 4).
 - `:desktop:desktopTest --tests '*MaterialShowcaseRenderTest*'`: 6 renders, inspected.
 - `checkKotlinAbi`: the public API is unchanged (internal drawing only).
 - `:web:compileProductionExecutableKotlinWasmJs`, `:sample:assembleRelease`, strict MkDocs and
