@@ -1,5 +1,31 @@
 # Performance
 
+## Compose cache and field behaviour
+
+Nested themes now retain and mirror only views with active consumers. Settings changes release
+superseded views; shared settings stay live until the last consumer is forgotten or abandoned.
+
+Custom-path fields are skipped on shader-incapable backends. Their cache key and construction use
+the same whole-pixel size and exact recorded padding. Padding is already quantized to the render-scale
+grid, so style changes within a grid bucket reuse the field. Fractional recorded padding remains
+aligned with the shader; equal padded dimensions cannot hide different inner geometry.
+A bounded workspace reuses the full-resolution distance-transform arrays. One workspace retains at
+most 262,144 pixels of scratch storage (approximately 4.25 MiB of primitive arrays). Larger or
+concurrent builds use temporary buffers rather than blocking or growing that retained workspace.
+
+Phone-width fields above this cap use temporary arrays, so opening a large custom-shaped screen
+once does not permanently grow the retained workspace. They still reuse arrays between the two
+transform passes within a build. The earlier 72.5% allocation reduction for large pooled fields
+used a higher cap and is historical; it does not describe the current large-field path.
+The updated paired desktop probe measures about 72.5% fewer Java allocations for a warmed
+512 × 256 px field (1.87 MB versus 6.81 MB), and 30% fewer for the temporary-buffer large-field
+path (10.99 MB versus 15.70 MB at 1080 × 300; 24.26 MB versus 34.65 MB at 1080 × 720).
+Output pixels match the prior algorithm for these integer-geometry cases. CPU medians are slower
+in this run; allocation reduction is not a CPU speedup. These results do not establish an
+Android frame-rate improvement or make animated path geometry inexpensive.
+
+[Method, raw numbers and reproducible benchmark](https://github.com/shayann07/liquidglass/blob/main/review/atlas/compose-cache-field-2026-10-20/README.md).
+
 ## Atlas wide and narrow windows — 18 October 2026
 
 Static-scene redraw submission (120 samples after 10 warmups; not presented FPS), three scenes per

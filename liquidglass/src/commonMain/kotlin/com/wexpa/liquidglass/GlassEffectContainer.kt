@@ -171,7 +171,7 @@ internal fun GlassPortal(modifier: Modifier, content: @Composable (LiquidGlassSt
         return
     }
     val entry = remember(region) { GlassPortalEntry() }
-    entry.state = region.stateFor(LocalGlassDefaults.current)
+    entry.state = region.rememberStateFor(LocalGlassDefaults.current)
     entry.locals = currentCompositionLocalContext
     entry.content = content
     DisposableEffect(region, entry) {
@@ -244,7 +244,7 @@ fun GlassOverlay(content: @Composable androidx.compose.foundation.layout.BoxScop
         return
     }
     val entry = remember(region) { GlassPortalEntry().also { it.fillRoot = true } }
-    entry.state = region.stateFor(LocalGlassDefaults.current)
+    entry.state = region.rememberStateFor(LocalGlassDefaults.current)
     entry.locals = currentCompositionLocalContext
     entry.content = { Box(Modifier.fillMaxSize(), content = content) }
     DisposableEffect(region, entry) {

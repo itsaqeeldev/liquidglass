@@ -374,9 +374,11 @@ internal fun Modifier.liquidGlassCore(
     )
     // Measured once per shape and size, never per frame. Null for every shape that has a closed
     // form, which is all of them until someone reaches for a path.
-    val pathField = if (shape.needsSampledField(measured, direction, density)) {
+    val hasShaders = LiquidGlassSupport.hasShaders
+    val pathField = if (hasShaders && shape.needsSampledField(measured, direction, density)) {
         rememberGlassPathField(
             shape = shape,
+            enabled = hasShaders,
             size = measured,
             pad = padForField,
             band = with(density) { if (style.refractionBand.isSpecified) style.refractionBand.toPx() else 0f },
