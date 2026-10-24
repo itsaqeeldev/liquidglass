@@ -18,7 +18,7 @@ import http from 'node:http'
 import zlib from 'node:zlib'
 
 const require = createRequire(path.join(path.dirname(fileURLToPath(import.meta.url)), '../ports/web/package.json'))
-const { chromium } = require('playwright')
+const { chromium } = require('@playwright/test')
 
 const [target, runsArg = '3', throttle = 'none'] = process.argv.slice(2)
 let url = target
@@ -37,7 +37,7 @@ if (!/^https?:/.test(target)) {
     const root = path.resolve(dir)
     server = http.createServer((req, res) => {
         const file = path.resolve(root, '.' + decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'))
-        if (!file.startsWith(root)) { res.writeHead(403).end(); return }
+        if (file !== root && !file.startsWith(root + path.sep)) { res.writeHead(403).end(); return }
         fs.readFile(file, (err, body) => {
             if (err) { res.writeHead(404).end(); return }
             const type = types[path.extname(file)] ?? 'application/octet-stream'

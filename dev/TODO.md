@@ -38,20 +38,24 @@ scope/API/positioning decisions, one Gradle build per worktree).
 No 1.0.1: the owner decided on 20 Oct to ship these together as 1.1.0 rather than release the Flutter
 description fix alone.
 
-- [ ] **#80 #81 #82 External bug reports (itsaqeeldev, 20 Oct), all confirmed in source, for 1.1.0.** The owner invited the reporter to send PRs (help wanted): review theirs first; fix only if nobody takes it before 1.1.0. Each issue
-  carries a runnable jvmTest reproduction; turn each into a regression test that asserts the fixed behaviour.
-  #82: `rememberGlassPathField` keys on padded w/h but builds from size and pad; key on the real inputs.
-  #80: `GlassRegion.views` keeps every nested-theme settings tuple and `liquidGlassSource` mirrors them all;
-  track active consumers, release superseded/disposed views (no plain LRU). #81: path-field build runs at
-  full padded resolution during composition and before the `hasShaders` check; skip it without shaders,
-  reuse EDT scratch buffers, fix docs/shapes.md ("half resolution" is the output, not the computation),
-  then consider a bounded-resolution or off-composition build; odd-pad and field-consumer tests stay gates.
-- [x] **#78 Web demo first load (itsaqeeldev, 20 Oct).** Measured in headless Chrome
+- [x] **#80 / #82 and the first part of #81 (itsaqeeldev, 20 Oct), for 1.1.0.** Active-consumer
+  view lifetime, matching cache/build geometry (whole-pixel size, exact recording-grid padding),
+  shader-capability gating, bounded EDT
+  scratch reuse and corrected documentation are implemented with regression tests. The retained
+  workspace is capped at 256k pixels (~4.25 MiB); larger builds use temporary arrays.
+  CodeRabbit fractional-padding correction passes 21 focused checks and the full suite
+  (428 total, 401 passed, 27 opt-in skips, zero failures/errors); Android/Wasm/ABI/docs checks pass.
+  Verification and historical results: `review/atlas/compose-cache-field-2026-10-20/README.md`.
+- [ ] **#81 follow-up:** bounded-resolution or off-composition field preparation. Full-resolution
+  EDT remains synchronous; odd-pad and field-consumer tests stay gates.
+- [ ] **#78 Web demo first load: loader and on-page failures landed (itsaqeeldev, PR #85, 20 Oct); load time still open.** Measured in headless Chrome
   (tools/measure_web_demo.mjs, cold caches): 4.46 MB gzip (skiko.wasm 3.28 MB), then ~2 s per opening frame
   compiling shaders on a first visit; black page 7.6 s unthrottled, 30 s on slow 4G. Loader from first paint
   (0.05-0.2 s), hidden after settled frames; Compose mounts in #app (it replaced the body's children);
   no-Wasm-GC, failed-download/uncaught-error and lost-WebGL-context states on the page; docs iframes lazy.
   Time to a usable app unchanged (download + shaders). review/atlas/web-demo-load-2026-10-20.
+  Still open: cut the transfer (4.46 MB; brotli or a smaller skiko build), first-visit shader compile
+  (~2 s per opening frame), the never-renders root cause (not reproduced), and Firefox/Safari/phone checks.
 - [ ] **#79 Material 3 components need polish (owner screenshot of #material3).** The mini player's slider
   thumb sits outside its track, the switch and refresh button crowd the card edge, the "Recently played"
   hero is one huge empty gradient. Audit every component on the #material3 page against the Pixel 7

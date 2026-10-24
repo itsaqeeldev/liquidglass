@@ -1,0 +1,10 @@
+// Opt-in CPU/allocation probe; does not become part of the normal renderer suite.
+allprojects {
+    plugins.withId('org.jetbrains.kotlin.multiplatform') {
+        if (project.name == 'liquidglass') {
+            kotlin.sourceSets.all { sourceSet ->
+                if (sourceSet.name == 'jvmTest') sourceSet.kotlin.srcDir(rootProject.file('tools/benchmarks/pathfield'))
+            }
+        }
+    }
+}

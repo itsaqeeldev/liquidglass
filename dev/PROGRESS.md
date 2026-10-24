@@ -12,6 +12,34 @@ in `#app`; no-Wasm-GC, failed-download/startup-error and lost-context states sho
 (4.46 MB gzip, 3.28 MB of it skiko.wasm) and first-visit shader compilation are unchanged, so the time to a
 usable app is unchanged. Chromium only. [Evidence](../review/atlas/web-demo-load-2026-10-20/README.md).
 
+**20 October CodeRabbit follow-up to `1654e90`:** removed the second rounding of `recordPad`;
+the field now preserves the shader's fractional origin. Red regression: expected layer width 145,
+actual 146 at scale 0.75. Green focused run: 21 tests/probes, zero failures/errors/skips in 41s.
+Scales 1/0.75/0.6/0.5/0.25 match uncached reference fields exactly; within-grid style changes reuse
+the field. Added inspected Skia field-texel evidence and documented the affected function contracts.
+Full suite: 428 tests, 401 passed, 27 opt-in skips, zero failures/errors (28m45s). Android sample,
+Wasm, ABI, strict MkDocs and all 139 repository links pass. No assertions or timeouts changed.
+
+**20 October PR #83 review follow-up (`1654e90`, pad rounding superseded above):** capped retained storage at 256k pixels (~4.25 MiB);
+key and build now use the same whole-pixel rounded size/pad. Added root-region replacement,
+sub-pixel reuse/boundary and oversized/busy-pool regressions, explicit capability propagation
+and direct coroutines dependency. All 22 focused tests/probes pass in 1m28s. Full renderer run:
+427 tests, 400 passed, 27 opt-in skips, zero failures/errors (one worker, 27m04s). Android sample,
+Wasm compilation, Kotlin ABI and strict docs/link checks pass.
+Updated Java allocation reductions: 72.5% for a small pooled field, 30% for large temporary builds.
+CPU medians are slower in this run. Docs now describe the implemented state and track #81's
+bounded-resolution/off-composition follow-up separately.
+
+**20 October initial external-report fixes (`c1d2b5a`, superseded pool cap):** adds reference-counted remembered view
+leases (including abandonment), actual field-geometry keys, capability gating and bounded EDT
+scratch reuse. Two original reproductions failed before the fix; focused regressions pass.
+Paired large-field probe: about 72.5% less Java allocation after pool warmup, pixels unchanged in
+the measured cases, no Android FPS claim. Android sample, Wasm and ABI checks pass. Full-suite
+verification recorded 393 passes, 27 opt-in skips and three coroutine timeouts under four renderer
+workers. All three pass on an unchanged-source single-worker rerun, along with the packaged
+benchmark and inspected cache-field plot. The initial full invocation remains recorded as failed.
+Evidence: `review/atlas/compose-cache-field-2026-10-20/README.md`.
+
 **13 October documentation/pause checkpoint:** README and the documentation now provide a
 current visual/evidence index, native.NET guide, updated platform/performance/limit statements,
 Atlas diagnostic commands and changelog. Future changes must update documentation and inspected

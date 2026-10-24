@@ -45,6 +45,7 @@
         // Replaces the loader's text with what went wrong and a Reload link; the bar stops.
         function fail(title, detail) {
             loader.dataset.state = 'failed';
+            loader.setAttribute('role', 'alert'); loader.setAttribute('aria-live', 'assertive');
             document.getElementById('loader-title').textContent = title;
             var small = document.getElementById('loader-detail');
             small.textContent = detail + ' ';
