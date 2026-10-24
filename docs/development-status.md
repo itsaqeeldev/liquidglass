@@ -13,6 +13,14 @@ research remains available; this page identifies which later changes supersede i
   first-tap frame is 67-91 ms, cold start unchanged (medians 135.5 and 136 ms). The library baseline profile is
   removed (no measurable gain). [Evidence](https://github.com/shayann07/liquidglass/blob/main/review/atlas/first-tap-fix-2026-10-20/README.md).
 
+## Material 3 polish (20 October, #79)
+
+- `Slider` and `RangeSlider` tracks run under the thumb's whole travel; they stopped half a thumb short
+  of each end. `GlassSliderTrackTest` pins it. The showcase's mini player is inset from the card's edge
+  and shows a pause glyph; its hero cover is capped at 280 dp on wide windows. Desktop Skia renders before
+  and after, and a Pixel 7 capture: [evidence](https://github.com/shayann07/liquidglass/blob/main/review/atlas/material3-polish-2026-10-20/README.md).
+  Browser captures of the web demo (Chrome) show the same fix.
+
 ## Compose maintenance on main
 
 Issues #80 and #82 are addressed by active nested-theme view lifetime and matching

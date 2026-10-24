@@ -12,6 +12,13 @@ pipeline for the glass shader. `GlassPadFloor` holds the largest pad; the first 
 67-91 ms (was 326-352), cold start unchanged. The library baseline profile is removed (no measurable gain).
 [Evidence](../review/atlas/first-tap-fix-2026-10-20/README.md).
 
+**20 October Material 3 polish (#79, PR #84):** slider and range-slider tracks span the thumb's whole
+travel; they stopped half a thumb short of each end (19 dp, derived from the authored 38 dp thumb;
+`GlassSliderTrackTest` measured 19 px at density 1 before the fix, red before and green after). The
+showcase's mini player and wide-window hero are fixed (authored layout values). Regression pass: material3
+suite 20 of 20, ABI unchanged. Every component on the page, overlays included, inspected on desktop, a
+Pixel 7 and in the browser. [Evidence](../review/atlas/material3-polish-2026-10-20/README.md).
+
 **20 October CodeRabbit follow-up to `1654e90`:** removed the second rounding of `recordPad`;
 the field now preserves the shader's fractional origin. Red regression: expected layer width 145,
 actual 146 at scale 0.75. Green focused run: 21 tests/probes, zero failures/errors/skips in 41s.

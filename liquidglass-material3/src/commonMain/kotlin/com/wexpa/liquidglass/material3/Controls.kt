@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -163,11 +164,9 @@ private fun GlassRangeTrack(state: RangeSliderState, colors: SliderColors, enabl
     val to = fraction(state.activeRangeEnd)
     Canvas(Modifier.fillMaxWidth().height(6.dp)) {
         val r = CornerRadius(size.height / 2f)
-        val thumb = GlassThumbWidth.toPx()
-        val a = thumb / 2f + from * (size.width - thumb)
-        val b = thumb / 2f + to * (size.width - thumb)
-        drawRoundRect(inactive, cornerRadius = r)
-        drawRoundRect(active, topLeft = androidx.compose.ui.geometry.Offset(a, 0f), size = Size(b - a, size.height), cornerRadius = r)
+        val overhang = GlassThumbWidth.toPx() / 2f
+        drawRoundRect(inactive, Offset(-overhang, 0f), Size(size.width + 2f * overhang, size.height), r)
+        drawRoundRect(active, Offset(from * size.width, 0f), Size((to - from) * size.width, size.height), r)
     }
 }
 
@@ -184,10 +183,10 @@ private fun GlassSliderTrack(state: SliderState, range: ClosedFloatingPointRange
         ((state.value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f) else 0f
     Canvas(Modifier.fillMaxWidth().height(6.dp)) {
         val r = CornerRadius(size.height / 2f)
-        val thumb = GlassThumbWidth.toPx()
-        // The thumb's centre travels from half its width in to half its width short of the end.
-        val end = thumb / 2f + fraction * (size.width - thumb)
-        drawRoundRect(inactive, cornerRadius = r)
-        drawRoundRect(active, size = Size(end, size.height), cornerRadius = r)
+        // Material lays the track out between the thumb's centre positions (half a thumb in from each
+        // end). iOS's capsule runs under the whole thumb, so draw half a thumb past both ends.
+        val overhang = GlassThumbWidth.toPx() / 2f
+        drawRoundRect(inactive, Offset(-overhang, 0f), Size(size.width + 2f * overhang, size.height), r)
+        drawRoundRect(active, Offset(-overhang, 0f), Size(overhang + fraction * size.width, size.height), r)
     }
 }

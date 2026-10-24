@@ -12,7 +12,7 @@ shapes and motion in its own colour scheme.
   <img src="assets/material3-light.png" width="300" alt="A Material 3 music app in glass, light scheme: top bar, segmented control, buttons, chips, a frosted mini player with a switch and a slider, and the tab bar with a search button, over album art">
   <img src="assets/material3-dark.png" width="300" alt="The same app in the dark scheme">
 </p>
-<p align="center"><sub>Rendered by the library (desktop Skia, 390 × 844 dp at density 3, scaled down), scrolled so the album art passes under the glass, from Material's default light and dark schemes; only the imports differ from a Material 3 app. The same screen runs on Android and in the browser. <a href="https://github.com/shayann07/liquidglass/blob/main/review/atlas/showcase-2026-10-19/README.md">Evidence and limits</a>, including Pixel 7 captures.</sub></p>
+<p align="center"><sub>Rendered by the library (desktop Skia, 390 × 844 dp at density 3, scaled down), scrolled so the album art passes under the glass, from Material's default light and dark schemes; only the imports differ from a Material 3 app. The same screen runs on Android and in the browser. <a href="https://github.com/shayann07/liquidglass/blob/main/review/atlas/material3-polish-2026-10-20/README.md">Evidence and limits</a>; <a href="https://github.com/shayann07/liquidglass/blob/main/review/atlas/showcase-2026-10-19/README.md">earlier renders and Pixel 7 captures</a>.</sub></p>
 
 [Try it in your browser](demo.md#material-3). The change is the imports:
 
@@ -78,7 +78,7 @@ The glass `Scaffold` is the root: it records the screen once and every glass com
 | `Card` (both), `ElevatedCard`, `OutlinedCard` | frosted glass panels; a clickable card is interactive glass |
 | `AssistChip`, `FilterChip`, `InputChip`, `SuggestionChip` | glass capsules; a selected chip is prominent glass |
 | `Switch` | an iOS switch: the thumb turns into a glass lens while pressed |
-| `Slider` | iOS's thin continuous track in the primary colour; the thumb turns into a glass lens while dragged |
+| `Slider` | iOS's thin continuous track in the primary colour, running under the thumb's whole travel; the thumb turns into a glass lens while dragged |
 | `SingleChoiceSegmentedButtonRow`, `SegmentedButton` | iOS's segmented control: a glass capsule with a lens selection |
 | `MultiChoiceSegmentedButtonRow`, `SegmentedButton(checked)` | a glass capsule; checked segments are prominent glass |
 | `PrimaryTabRow`, `SecondaryTabRow`, `TabRow`, `Tab` | the same segmented control |
