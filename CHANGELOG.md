@@ -18,6 +18,18 @@ Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>
   use temporary buffers (#81).
 - Verification and measurement limits:
   [Compose cache/field evidence](review/atlas/compose-cache-field-2026-10-20/README.md).
+- Material 3: the `Slider` and `RangeSlider` tracks run under the thumb's whole travel, as iOS's do.
+  They stopped half a thumb short of each end, so the thumb hung past the track. The showcase's mini
+  player keeps its controls clear of the card's edge and shows a pause glyph while playing, and its
+  hero cover is capped at 280 dp on wide windows, where it filled the screen with sky (#79).
+  [Evidence](review/atlas/material3-polish-2026-10-20/README.md).
+- Android: the first tab bar tap after install no longer stalls for one 326-352 ms frame on a Pixel 7
+  (67-91 ms now). The selector's record pad followed its deforming body, so its layers were reallocated
+  mid-gesture and the first frame at a new size compiled a new GPU pipeline for the glass shader; the pad
+  is now held at its largest (the body's pad only: a fuse's neck margin is never held, so a
+  long press that joins the trailing button does not keep a fused-size layer). Cold start is unchanged. The library baseline profile is removed: it showed
+  no measurable gain before or after this fix (#71).
+  [Evidence](review/atlas/first-tap-fix-2026-10-20/README.md).
 - Web demo: a loader shows from the first paint instead of a black page while the 4.5 MB download and
   the first visit's shader compilation run; a browser without WebAssembly GC, a failed download or a lost
   graphics context is reported on the page. The docs load each embedded demo lazily, as it approaches the

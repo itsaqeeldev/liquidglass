@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.materialIcon
+import androidx.compose.material.icons.materialPath
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import com.wexpa.liquidglass.material3.*
 import kotlin.math.PI
 import kotlin.math.sin
@@ -118,7 +121,12 @@ fun MaterialShowcase(
                             Text("Recently played", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground)
                             Spacer(Modifier.height(10.dp))
-                            CoverArt((tab + 0) % CoverCount, Modifier.fillMaxWidth().aspectRatio(1.6f).clip(RoundedCornerShape(22.dp)))
+                            // 1.6:1 on a phone; capped on a wide window, where the full-width cover was
+                            // taller than the screen and showed only the top of its sky.
+                            BoxWithConstraints {
+                                CoverArt((tab + 0) % CoverCount, Modifier.fillMaxWidth().height(min(maxWidth / 1.6f, 280.dp))
+                                    .clip(RoundedCornerShape(22.dp)))
+                            }
                         }
                     }
                     items(Albums.size * 3) { i ->
@@ -158,7 +166,8 @@ fun MaterialShowcase(
                 // The mini player, floating over the library as iOS's accessory does.
                 Card(Modifier.align(Alignment.BottomCenter).padding(bottom = padding.calculateBottomPadding()).padding(horizontal = 16.dp, vertical = 10.dp)
                     .widthIn(max = 488.dp).fillMaxWidth()) {
-                    Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    // Inset like iOS's accessories: the controls keep clear of the card's rim.
+                    Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CoverArt(0, Modifier.size(46.dp).clip(RoundedCornerShape(10.dp)))
                             Spacer(Modifier.width(12.dp))
@@ -168,8 +177,9 @@ fun MaterialShowcase(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
                             }
                             IconButton(onClick = { playing = !playing }) {
-                                Icon(if (playing) Icons.Default.Refresh else Icons.Default.PlayArrow, if (playing) "Pause" else "Play")
+                                Icon(if (playing) Pause else Icons.Default.PlayArrow, if (playing) "Pause" else "Play")
                             }
+                            Spacer(Modifier.width(10.dp))
                             Switch(checked = crossfade, onCheckedChange = { crossfade = it })
                         }
                         Slider(value = progress, onValueChange = { progress = it }, modifier = Modifier.fillMaxWidth())
@@ -217,6 +227,14 @@ private fun Wallpaper(dark: Boolean, modifier: Modifier) = Canvas(modifier) {
         val centre = Offset(c.x * size.width, c.y * size.height)
         val radius = r * size.maxDimension
         drawCircle(Brush.radialGradient(listOf(color.copy(alpha = if (dark) .55f else .8f), color.copy(alpha = 0f)), centre, radius), radius, centre)
+    }
+}
+
+/** Material's pause glyph; the core icon set has none. */
+private val Pause = materialIcon("Filled.Pause") {
+    materialPath {
+        moveTo(6f, 19f); horizontalLineToRelative(4f); verticalLineTo(5f); horizontalLineTo(6f); close()
+        moveTo(14f, 5f); verticalLineToRelative(14f); horizontalLineToRelative(4f); verticalLineTo(5f); close()
     }
 }
 

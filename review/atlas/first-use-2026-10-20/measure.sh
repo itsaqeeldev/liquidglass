@@ -4,6 +4,8 @@
 # second tap on another tab (warm), dump again. Prints per run: frames, max frame ms, frames over 11.1 ms
 # (90 Hz deadline), for the first and the second interaction.
 # adb comes from $ADB or PATH; pick the device with ANDROID_SERIAL (the 20 Oct runs used a Pixel 7).
+# CLEAR=1 runs `pm clear` before every run, so each first tap is a first-install tap (the GPU shader
+# cache lives in the app's data); EXTRAS are passed to `am start` (e.g. EXTRAS="--ez light true").
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 A="${ADB:-adb}"
@@ -22,7 +24,9 @@ print(len(d), round(max(d),1), sum(1 for x in d if x>11.1))"
 }
 for i in $(seq 1 $runs); do
   $A shell am force-stop $PKG
-  $A shell am start -W -n $PKG/.PhoneActivity >/dev/null
+  if [ "${CLEAR:-0}" = 1 ]; then $A shell pm clear $PKG >/dev/null; fi
+  read -r -a extras <<< "${EXTRAS:-}"
+  $A shell am start -W -n $PKG/.PhoneActivity "${extras[@]}" >/dev/null
   sleep 3
   $A shell dumpsys gfxinfo $PKG reset >/dev/null
   $A shell input tap $3 $4

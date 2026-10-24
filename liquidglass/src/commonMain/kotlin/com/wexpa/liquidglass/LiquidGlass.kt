@@ -350,6 +350,8 @@ internal fun Modifier.liquidGlassCore(
     // resize in place, so the field, the band, the pad and the drag policy kept the first size.
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
+    // A body's pad, held at its largest (see GlassPadFloor), per render scale and density.
+    val padFloor = remember(state.renderScale, density) { GlassPadFloor() }
     val (press, pressModifier) = rememberGlassPress(
         enabled = interaction != null,
         source = pressSource,
@@ -550,7 +552,16 @@ internal fun Modifier.liquidGlassCore(
                 // Coordinate contract: the recorded layer, the shader's pad uniform, the sampled
                 // field and the draw-back translate all use this one pad (see recordPad).
                 val rs = state.renderScale.coerceIn(0.25f, 1f)
-                val pad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx)
+                // A diagnostic pad override is taken as given, never raised by the held floor.
+                // Only the body's own pad is held: a fuse's neck margin grows with the gap to the
+                // neighbour, and holding it would keep a fused-size layer after the fuse lets go.
+                val fusedPad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx)
+                val pad = if ((poseBody != null || body != null) && LiquidGlassDiagnostics.recordPadOverridePx == null) {
+                    val bodyPad = if (fuse == null) fusedPad else style.recordPad(radii, size, null, this, state.renderScale, bandPx)
+                    padFloor.hold(bodyPad, fusedPad)
+                } else {
+                    fusedPad
+                }
                 val useEndpoint = endpointComposite && refractContent && LiquidGlassSupport.hasShaders
                 val sizeFactor = elementSizeFactor(size, this)
                 val tintDrawing=tintWithinThrough?.drawing
@@ -1054,6 +1065,28 @@ private fun DrawScope.drawAdded(layer: GraphicsLayer, dx: Float, dy: Float, shar
         canvas.saveLayer(Rect(-1e4f, -1e4f, 1e4f, 1e4f), paint)
         translate(dx, dy) { drawLayer(layer) }
         canvas.restore()
+    }
+}
+
+/**
+ * The largest pad a selector body has needed so far. A body's optical band follows its deformation,
+ * so the pad derived from it ([recordPad]) changed on most frames of a gesture, and every new padded
+ * size reallocated the node's layers. On Android the first frame at a new size also compiled a new GPU
+ * pipeline for the glass shader: one 265 ms frame on the first tap after install on a Pixel 7 (#71,
+ * review/atlas/first-tap-fix-2026-10-20). Held at its largest, the allocation stays put; a larger pad only
+ * records more margin, and the recording, the shader's `uPad` and the draw-back all use the held value.
+ */
+internal class GlassPadFloor {
+    private var pad = 0f
+
+    /**
+     * The pad to record with: the largest body pad held so far ([needed] raises it), or [fused] when
+     * a fuse needs more. [fused] is never held, so the layer returns to the body's size once the
+     * fuse lets go.
+     */
+    fun hold(needed: Float, fused: Float = needed): Float {
+        if (needed > pad) pad = needed
+        return maxOf(pad, fused)
     }
 }
 

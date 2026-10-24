@@ -35,6 +35,20 @@ a usable app is unchanged (download plus shaders). Failure states (no Wasm GC, f
 error, lost WebGL context) are forced in Chromium only; Firefox, Safari and phones are not measured, and a
 permanent black page was not reproduced. Evidence: review/atlas/web-demo-load-2026-10-20.
 
+## Material 3 polish, #79 (20 October, PR #84)
+
+- Library: `Slider` and `RangeSlider` tracks stopped half a thumb short of each end, because Material
+  lays the track out between the thumb's centre positions and the glass track inset again; they now draw
+  half a thumb past both ends. Half a thumb is 19 dp, derived from the authored 38 dp thumb width.
+- Measured: `GlassSliderTrackTest` read the track starting 19 px in (density 1) before the fix, and at
+  the slider's ends after it.
+- Authored (demo layout, not measured): the mini player's 20 x 14 dp inset and 10 dp gap before the
+  switch, the pause glyph, and the 280 dp cap on the hero cover on wide windows.
+- Regression pass: `:liquidglass-material3:jvmTest` 20 of 20 (4 slider tests); `checkKotlinAbi` unchanged.
+- Audit: every component on the page, including the menu, dialog, sheet and tooltip, inspected on the
+  desktop and in the browser; desktop renders before/after, a Pixel 7 capture and browser captures in
+  review/atlas/material3-polish-2026-10-20.
+
 ## RELEASED: v1.0.0 (20 Oct 2026)
 
 Release PR #76 merged (4a71394) after CodeRabbit's review: the first-use TODO row stays open
@@ -110,8 +124,8 @@ issues + Discussions for what this machine cannot verify, launch drafts (do not 
    review/atlas/reference-replay-2026-10-13/README.md (no regression; tap pill +0.8/-2, held lens -5 docs2).
    Rejected: tapAppearanceFallOmega 20 (only lengthens the tail). wallscore.py needs a probe.mjs from an old
    scratchpad (missing). First use on Pixel 7: review/atlas/first-use-2026-10-20 (317-370 ms frame on the first
-   tap after install = shader compile; warm-up deferred, #71). Baseline profile lives in
-   liquidglass/src/androidMain/baselineProfiles/ (the KMP library plugin ignores src/androidMain/baseline-prof.txt).
+   tap after install = shader compile; fixed by holding the selector's pad, #71, review/atlas/first-tap-fix-2026-10-20).
+   The library baseline profile (liquidglass/src/androidMain/baselineProfiles/) was removed under #71: no measurable gain.
    Residual issues #70-#75; all dev/TODO.md rows closed.
 6. Review page: .local/review-selector/index.html in the session worktree (local only, build.py p20).
    Owner accepted the selector in advance (20 Oct) and authorized merge, tag v1.0.0 and publish.
