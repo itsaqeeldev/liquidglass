@@ -335,8 +335,6 @@ internal fun Modifier.liquidGlassCore(
     // uniforms and allocates, per panel, and on a scrolling screen the inputs are the same
     // frame after frame (the backdrop changes, the uniforms do not).
     val effects = remember { GlassEffectCache() }
-    // A body's pad, held at its largest (see GlassPadFloor), per render scale.
-    val padFloor = remember(state.renderScale) { GlassPadFloor() }
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     // The position, held separately as a value.
     //
@@ -352,6 +350,8 @@ internal fun Modifier.liquidGlassCore(
     // resize in place, so the field, the band, the pad and the drag policy kept the first size.
     var layoutSize by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
+    // A body's pad, held at its largest (see GlassPadFloor), per render scale and density.
+    val padFloor = remember(state.renderScale, density) { GlassPadFloor() }
     val (press, pressModifier) = rememberGlassPress(
         enabled = interaction != null,
         source = pressSource,
@@ -551,8 +551,14 @@ internal fun Modifier.liquidGlassCore(
                 // field and the draw-back translate all use this one pad (see recordPad).
                 val rs = state.renderScale.coerceIn(0.25f, 1f)
                 // A diagnostic pad override is taken as given, never raised by the held floor.
-                val pad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx).let {
-                    if ((poseBody != null || body != null) && LiquidGlassDiagnostics.recordPadOverridePx == null) padFloor.hold(it) else it
+                // Only the body's own pad is held: a fuse's neck margin grows with the gap to the
+                // neighbour, and holding it would keep a fused-size layer after the fuse lets go.
+                val fusedPad = style.recordPad(radii, size, fuse, this, state.renderScale, bandPx)
+                val pad = if ((poseBody != null || body != null) && LiquidGlassDiagnostics.recordPadOverridePx == null) {
+                    val bodyPad = if (fuse == null) fusedPad else style.recordPad(radii, size, null, this, state.renderScale, bandPx)
+                    padFloor.hold(bodyPad, fusedPad)
+                } else {
+                    fusedPad
                 }
                 val useEndpoint = endpointComposite && refractContent && LiquidGlassSupport.hasShaders
                 val sizeFactor = elementSizeFactor(size, this)
@@ -1071,10 +1077,14 @@ private fun DrawScope.drawAdded(layer: GraphicsLayer, dx: Float, dy: Float, shar
 internal class GlassPadFloor {
     private var pad = 0f
 
-    /** The pad to record with: [needed], or the largest pad held before if that is larger. */
-    fun hold(needed: Float): Float {
+    /**
+     * The pad to record with: the largest body pad held so far ([needed] raises it), or [fused] when
+     * a fuse needs more. [fused] is never held, so the layer returns to the body's size once the
+     * fuse lets go.
+     */
+    fun hold(needed: Float, fused: Float = needed): Float {
         if (needed > pad) pad = needed
-        return pad
+        return maxOf(pad, fused)
     }
 }
 

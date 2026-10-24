@@ -1,6 +1,8 @@
 package com.wexpa.liquidglass
 
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.DpRect
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Density
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -76,6 +78,28 @@ class GlassPadContractTest {
             assertEquals(needed.max(), kept.last())
             // Only a wider band than any before grows it: one reallocation, not one per frame.
             assertEquals(2, kept.distinct().size, "the held pad changed more than once at renderScale $rs")
+        }
+    }
+
+    /**
+     * #86 review: a held lens that fuses with an anchored neighbour needs the neck's margin, which
+     * grows with the gap. Only the body's pad is held, so once the fuse lets go the layer returns
+     * to the body's size instead of keeping the fused one for the node's lifetime.
+     */
+    @Test
+    fun aFuseMarginIsNeverHeld() {
+        val held = GlassStyle.Regular.copy(profile = GlassProfile.Held)
+        // A neighbour well clear of the body (dp, relative to the element's top left).
+        val fuse = GlassFuse(DpRect(260.dp, 4.dp, 300.dp, 40.dp), cornerRadius = 18.dp, anchored = true)
+        for (rs in listOf(1f, 0.75f, 0.5f, 0.25f)) {
+            val floor = GlassPadFloor()
+            val body = held.recordPad(radii, size, null, density, rs)
+            val fused = held.recordPad(radii, size, fuse, density, rs)
+            assertTrue(fused > body, "the fuse does not widen the pad at renderScale $rs: the test proves nothing")
+            assertEquals(body, floor.hold(body))
+            assertEquals(fused, floor.hold(body, fused), "a fused frame must record the neck's margin")
+            assertEquals(body, floor.hold(body), "the held pad kept the fuse's margin at renderScale $rs")
+            assertTrue(wholeLayerPixels(floor.hold(body, fused), rs))
         }
     }
 }
