@@ -108,7 +108,7 @@ pins it at render scales 1, 0.75, 0.5 and 0.25.
 
 The measured tap path is unchanged by this: with no fuse, `body == fused` and the pad is exactly what
 the measured build recorded. The numbers above were measured on the PR's build before this follow-up
-(after `4cd5ed8`, before `3de39f6`; `3de39f6` and `20cebf8` change tests and documentation only). This
+(after `4cd5ed8`, before `3de39f6`; `3de39f6` only exempts the opt-in diagnostic pad override from the floor and `20cebf8` adds a comment, so neither changes what a normal app draws). This
 follow-up was not re-measured on the phone, which was not connected; the long-press-and-fuse path was
 never in the timing series.
 
