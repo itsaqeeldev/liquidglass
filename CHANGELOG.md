@@ -6,10 +6,23 @@ A version heading means that version is published; anything above the newest one
 Flutter: `liquiglass` 1.0.0 is on pub.dev (<https://pub.dev/packages/liquiglass>), uploaded by hand on
 20 October; later tags publish it from the release workflow.
 
+- Compose: release nested-theme recording views when their last consumer changes settings,
+  leaves composition or is abandoned; shared active consumers keep receiving backdrop updates (#80).
+- Skip custom-path field generation without shaders and reuse bounded distance-transform scratch
+  buffers. Full-resolution geometry and odd-pad alignment are preserved; computation is still
+  synchronous. Correct the half-resolution documentation and add an opt-in allocation probe (#81).
+- Key and build remembered path fields from the same whole-pixel size and exact recording-grid
+  padding so equal padded dimensions cannot reuse stale geometry. Preserve fractional padding at
+  reduced render scales to match the shader's origin; style changes within a grid bucket reuse
+  the field (#82). Cap retained transform buffers at 256k pixels (~4.25 MiB); oversized builds
+  use temporary buffers (#81).
+- Verification and measurement limits:
+  [Compose cache/field evidence](review/atlas/compose-cache-field-2026-10-20/README.md).
 - Android: the first tab bar tap after install no longer stalls for one 326-352 ms frame on a Pixel 7
   (67-91 ms now). The selector's record pad followed its deforming body, so its layers were reallocated
   mid-gesture and the first frame at a new size compiled a new GPU pipeline for the glass shader; the pad
-  is now held at its largest. Cold start is unchanged. The library baseline profile is removed: it showed
+  is now held at its largest (the body's pad only: a fuse's neck margin is never held, so a
+  long press that joins the trailing button does not keep a fused-size layer). Cold start is unchanged. The library baseline profile is removed: it showed
   no measurable gain before or after this fix (#71).
   [Evidence](review/atlas/first-tap-fix-2026-10-20/README.md).
 

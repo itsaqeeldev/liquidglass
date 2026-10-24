@@ -38,14 +38,16 @@ scope/API/positioning decisions, one Gradle build per worktree).
 No 1.0.1: the owner decided on 20 Oct to ship these together as 1.1.0 rather than release the Flutter
 description fix alone.
 
-- [ ] **#80 #81 #82 External bug reports (itsaqeeldev, 20 Oct), all confirmed in source, for 1.1.0.** The owner invited the reporter to send PRs (help wanted): review theirs first; fix only if nobody takes it before 1.1.0. Each issue
-  carries a runnable jvmTest reproduction; turn each into a regression test that asserts the fixed behaviour.
-  #82: `rememberGlassPathField` keys on padded w/h but builds from size and pad; key on the real inputs.
-  #80: `GlassRegion.views` keeps every nested-theme settings tuple and `liquidGlassSource` mirrors them all;
-  track active consumers, release superseded/disposed views (no plain LRU). #81: path-field build runs at
-  full padded resolution during composition and before the `hasShaders` check; skip it without shaders,
-  reuse EDT scratch buffers, fix docs/shapes.md ("half resolution" is the output, not the computation),
-  then consider a bounded-resolution or off-composition build; odd-pad and field-consumer tests stay gates.
+- [x] **#80 / #82 and the first part of #81 (itsaqeeldev, 20 Oct), for 1.1.0.** Active-consumer
+  view lifetime, matching cache/build geometry (whole-pixel size, exact recording-grid padding),
+  shader-capability gating, bounded EDT
+  scratch reuse and corrected documentation are implemented with regression tests. The retained
+  workspace is capped at 256k pixels (~4.25 MiB); larger builds use temporary arrays.
+  CodeRabbit fractional-padding correction passes 21 focused checks and the full suite
+  (428 total, 401 passed, 27 opt-in skips, zero failures/errors); Android/Wasm/ABI/docs checks pass.
+  Verification and historical results: `review/atlas/compose-cache-field-2026-10-20/README.md`.
+- [ ] **#81 follow-up:** bounded-resolution or off-composition field preparation. Full-resolution
+  EDT remains synchronous; odd-pad and field-consumer tests stay gates.
 - [ ] **#78 / #79 Web demo (liquidglass.shayxo.dev/demo/): slow, sometimes blank (#78); Material 3 components need polish (#79). Owner, 20 Oct.**
   The Wasm demo shows a black page for a long time on first load, sometimes never renders, and several
   Material 3 components look visually wrong (owner screenshot of #material3: the mini player's slider

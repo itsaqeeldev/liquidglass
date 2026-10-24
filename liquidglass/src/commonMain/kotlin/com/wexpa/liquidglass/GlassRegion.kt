@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.RememberObserver
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -120,7 +121,7 @@ fun Modifier.glassEffect(glass: Glass? = null, shape: Shape = CapsuleShape, link
     val region = LocalGlassRegion.current
     if (region != null && LocalInGlassOverlay.current) {
         // In the overlay (a dialog, a sheet, a tab bar's portal) nothing is recorded: draw in place.
-        return@composed withMorph.liquidGlass(region.stateFor(defaults), shape, style, resolved.light(defaults.dark),
+        return@composed withMorph.liquidGlass(region.rememberStateFor(defaults), shape, style, resolved.light(defaults.dark),
             interaction = if (resolved.isInteractive) resolved.interaction else null, link = link)
     }
     if (region == null) {
@@ -139,7 +140,7 @@ fun Modifier.glassEffect(glass: Glass? = null, shape: Shape = CapsuleShape, link
     entry.interaction = if (resolved.isInteractive) resolved.interaction else null
     entry.morph = morph
     entry.light = resolved.light(defaults.dark)
-    entry.state = region.stateFor(defaults)
+    entry.state = region.rememberStateFor(defaults)
     entry.link = link
     DisposableEffect(region, entry) {
         entry.disposed = false
@@ -164,15 +165,41 @@ internal val LocalGlassDefaults = staticCompositionLocalOf {
 @Stable
 internal class GlassRegion(val state: LiquidGlassState) {
     var root: LayoutCoordinates? = null
-    /** The same recording seen with other accessibility settings or render scales (nested themes). */
+    /** Only settings with live consumers are mirrored into the shared recording. */
     val views = HashMap<Triple<Float, Float, Float>, LiquidGlassState>()
+    private val consumers = HashMap<Triple<Float, Float, Float>, Int>()
 
-    fun stateFor(d: GlassDefaults): LiquidGlassState {
+    /** Holds one view reference for this consumer until its keys change or composition ends. */
+    @Composable
+    fun rememberStateFor(d: GlassDefaults): LiquidGlassState =
+        remember(this, d.reduceTransparency, d.increaseContrast, d.renderScale) {
+            GlassViewLease(this, d)
+        }.state
+
+    /** Shares an active settings view, or uses the root state when its settings already match. */
+    internal fun acquire(d: GlassDefaults): LiquidGlassState {
         if (d.reduceTransparency == state.frost && d.increaseContrast == state.contrast && d.renderScale == state.renderScale) return state
-        return views.getOrPut(Triple(d.reduceTransparency, d.increaseContrast, d.renderScale)) {
+        val key = Triple(d.reduceTransparency, d.increaseContrast, d.renderScale)
+        val view = views.getOrPut(key) {
             LiquidGlassState(state.background, 0f, d.reduceTransparency, d.increaseContrast, d.renderScale).also {
                 it.layer = state.layer; it.sourceCoordinates = state.sourceCoordinates; it.sourceSize = state.sourceSize
             }
+        }
+        consumers[key] = (consumers[key] ?: 0) + 1
+        return view
+    }
+
+    /** Drops one acquired reference and removes a settings view after its final consumer leaves. */
+    internal fun release(view: LiquidGlassState) {
+        if (view === state) return
+        val key = Triple(view.frost, view.contrast, view.renderScale)
+        check(views[key] === view)
+        val remaining = consumers.getValue(key) - 1
+        if (remaining == 0) {
+            consumers.remove(key)
+            views.remove(key)
+        } else {
+            consumers[key] = remaining
         }
     }
     /**
@@ -181,6 +208,29 @@ internal class GlassRegion(val state: LiquidGlassState) {
      * as in an ordinary layout, and a dialog opened later draws over everything before it.
      */
     val layers = mutableStateListOf<Any>()
+}
+
+/**
+ * Acquire during remember so siblings in the same composition share a view. RememberObserver
+ * releases it both on normal disposal/key replacement and when a composition is abandoned before
+ * its effects run. A DisposableEffect alone would leave the latter acquisition behind.
+ */
+internal class GlassViewLease(private val region: GlassRegion, defaults: GlassDefaults) : RememberObserver {
+    val state = region.acquire(defaults)
+    private var released = false
+    /** Acquisition already happened during construction so same-composition siblings share it. */
+    override fun onRemembered() = Unit
+    /** Releases the reference on disposal or replacement of a remember key. */
+    override fun onForgotten() = release()
+    /** Releases acquisitions from compositions that never reached the effects phase. */
+    override fun onAbandoned() = release()
+    /** Makes repeated lifecycle notifications harmless to other consumers of the same view. */
+    private fun release() {
+        if (!released) {
+            released = true
+            region.release(state)
+        }
+    }
 }
 
 /** A [glassEffect] element: where it is, what it looks like, and its content to draw on top. */

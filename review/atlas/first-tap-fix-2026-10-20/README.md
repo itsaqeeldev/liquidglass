@@ -96,6 +96,26 @@ The differences are inside the run-to-run spread, as they were before the fix, s
   and 0.25, and changes once rather than per frame.
 - `checkKotlinAbi` passes: only internal declarations changed.
 
+## Review follow-up (24 October): the fuse margin is not held
+
+Review of PR #86 found that the first version held the *whole* record pad, fuse included. A held lens
+that fuses with the tab bar's anchored trailing button needs the neck's margin (the gap to the button,
+plus smoothing, plus the band), and that pad was then kept for the node's lifetime: in a desktop probe
+the rest pad was ~36 px, the fused pad 143-173 px, and the pad stayed at 173 px after the fuse let go.
+`GlassPadFloor.hold(body, fused)` now holds only the body's pad and adds the fuse's margin unheld, so
+the layer returns to the body's size when the fuse lets go. `GlassPadContractTest.aFuseMarginIsNeverHeld`
+pins it at render scales 1, 0.75, 0.5 and 0.25.
+
+The measured tap path is unchanged by this: with no fuse, `body == fused` and the pad is exactly what
+the measured build recorded. The numbers above were measured on the PR's build before this follow-up
+(after `4cd5ed8`, before `3de39f6`; `3de39f6` and `20cebf8` change tests and documentation only). This
+follow-up was not re-measured on the phone, which was not connected; the long-press-and-fuse path was
+never in the timing series.
+
+**Raw captures.** The atrace and gfxinfo output behind these tables was parsed on the contributor's
+machine and is not in the repository; only the parsed tables are. A re-run with
+[`measure.sh`](../first-use-2026-10-20/measure.sh) (`CLEAR=1`) reproduces the table format.
+
 ## Limits
 
 - One phone. `adb shell input tap` is not a finger; presented-frame timing on the display is not

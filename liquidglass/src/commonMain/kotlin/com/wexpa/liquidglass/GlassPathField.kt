@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * A signed distance field for a shape the shader cannot describe analytically.
@@ -34,9 +35,9 @@ import kotlin.math.sqrt
  * of about one and a half refraction bands, which quantises distance to roughly a pixel — fine,
  * because the shader only ever asks two questions of it: how deep into the band a pixel is
  * (about 1% of the band) and which way the surface faces, and it answers the second by
- * differencing over a wide epsilon where a pixel of noise is nothing. And it is computed at
- * half resolution, because a distance field is smooth almost everywhere and bilinear sampling
- * puts back more than the halving takes out.
+ * differencing over a wide epsilon where a pixel of noise is nothing. The mask and distance
+ * transform are computed at full resolution to preserve pad alignment, then the field is stored
+ * at half resolution; bilinear sampling covers the difference.
  */
 internal class GlassPathField(
     val bitmap: ImageBitmap,
@@ -57,6 +58,9 @@ private const val FIELD_SCALE = 2
  *
  * Keyed on everything that changes the result, so scrolling and pressing never touch it and a
  * resize rebuilds it exactly once.
+ *
+ * [size] is rounded to layout pixels. [pad] must be the value returned by [recordPad], already
+ * quantized to the recording grid; keep it unchanged to match the shader's sampling origin.
  */
 @Composable
 internal fun rememberGlassPathField(
@@ -66,25 +70,87 @@ internal fun rememberGlassPathField(
     band: Float,
     density: Density,
     layoutDirection: LayoutDirection,
+    enabled: Boolean,
 ): GlassPathField? {
-    val w = (size.width + pad * 2f).roundToInt()
-    val h = (size.height + pad * 2f).roundToInt()
+    // Do not even ask the shape for an outline on a backend that cannot consume its field.
+    if (!enabled) return null
+    // Match layout's whole-pixel size in both the cache key and outline construction.
+    val fieldSize = Size(size.width.roundToInt().toFloat(), size.height.roundToInt().toFloat())
+    // recordPad already snaps to the render-scale grid. A second rounding would move the
+    // rasterized outline away from the shader's uPad origin at fractional render scales.
+    val fieldPad = pad
+    val w = (fieldSize.width + fieldPad * 2f).roundToInt()
+    val h = (fieldSize.height + fieldPad * 2f).roundToInt()
     // The outline depends on density and direction as well as size: an asymmetric path mirrors
     // under RTL, so both belong in the key.
-    return remember(shape, w, h, band, density, layoutDirection) {
-        if (w <= 0 || h <= 0 || size.width <= 0f || size.height <= 0f) return@remember null
-        val outline = shape.createOutline(size, layoutDirection, density)
+    return remember(shape, fieldSize, fieldPad, band, density, layoutDirection) {
+        if (w <= 0 || h <= 0 || fieldSize.width <= 0f || fieldSize.height <= 0f) return@remember null
+        val outline = shape.createOutline(fieldSize, layoutDirection, density)
         val path = (outline as? Outline.Generic)?.path ?: return@remember null
-        buildPathField(path, w, h, pad, band)
+        buildPathField(path, w, h, fieldPad, band)
     }
 }
 
+/** Builds an independently owned field while borrowing bounded scratch storage if available. */
 internal fun buildPathField(
     path: Path,
     layerWidth: Int,
     layerHeight: Int,
     pad: Float,
     band: Float,
+): GlassPathField? = GlassPathFieldBufferPool.use(layerWidth.toLong() * layerHeight) { buffers ->
+    buildPathField(path, layerWidth, layerHeight, pad, band, buffers)
+}
+
+/** Scratch storage owns no published bitmap. Every active element is overwritten before use. */
+internal class GlassPathFieldBuffers {
+    var inside = BooleanArray(0); private set
+    var dx = FloatArray(0); private set
+    var dy = FloatArray(0); private set
+    var distance = FloatArray(0); private set
+    var outer = FloatArray(0); private set
+
+    /** Grows all scratch planes together; smaller builds retain their existing arrays. */
+    fun ensureCapacity(count: Int) {
+        if (inside.size >= count) return
+        inside = BooleanArray(count)
+        dx = FloatArray(count)
+        dy = FloatArray(count)
+        distance = FloatArray(count)
+        outer = FloatArray(count)
+    }
+}
+
+/**
+ * One bounded reusable workspace (at most ~4.25 MiB of primitive arrays), not one per panel.
+ * Concurrent callers never wait for it or share writable buffers: they use temporary storage.
+ * Larger builds also use temporary storage so a large one-off panel does not grow the pool.
+ */
+internal object GlassPathFieldBufferPool {
+    private const val MAX_RETAINED_PIXELS = 256L * 1024L
+    private val mutex = Mutex()
+    private val buffers = GlassPathFieldBuffers()
+
+    /** Loans exclusive scratch arrays, falling back to temporary storage without blocking. */
+    fun <T> use(pixels: Long, block: (GlassPathFieldBuffers) -> T): T {
+        if (pixels !in 1..MAX_RETAINED_PIXELS || !mutex.tryLock()) {
+            return block(GlassPathFieldBuffers())
+        }
+        return try { block(buffers) } finally { mutex.unlock() }
+    }
+}
+
+/**
+ * Rasterizes at [pad] in layer coordinates, then encodes the signed distance at half resolution.
+ * [buffers] must be exclusive to this call; the returned bitmap retains none of its arrays.
+ */
+internal fun buildPathField(
+    path: Path,
+    layerWidth: Int,
+    layerHeight: Int,
+    pad: Float,
+    band: Float,
+    buffers: GlassPathFieldBuffers,
 ): GlassPathField? {
     val fw = (layerWidth / FIELD_SCALE).coerceAtLeast(1)
     val fh = (layerHeight / FIELD_SCALE).coerceAtLeast(1)
@@ -92,8 +158,8 @@ internal fun buildPathField(
 
     // Rasterise the outline at the layer's own resolution, at the panel's offset inside it, and
     // take the distance down to the field's resolution afterwards. Rasterising at field
-    // resolution put the outline on a half texel whenever the pad was odd (the pad is a whole
-    // number of layer pixels, not of texels), and the boolean mask then rounded it: the sampled
+    // resolution put the outline on a half texel whenever the pad was odd at renderScale=1,
+    // and the boolean mask then rounded it: the sampled
     // silhouette sat a full pixel off the closed form for pads 23 and 25 and exactly on it for 22
     // and 24. A full-resolution mask keeps the outline where the layer has it.
     val mask = ImageBitmap(layerWidth, layerHeight)
@@ -105,14 +171,15 @@ internal fun buildPathField(
     canvas.restore()
 
     val pixels = mask.toPixelMap()
-    val inside = BooleanArray(layerWidth * layerHeight)
+    buffers.ensureCapacity(layerWidth * layerHeight)
+    val inside = buffers.inside
     for (y in 0 until layerHeight) {
         for (x in 0 until layerWidth) {
             inside[y * layerWidth + x] = pixels[x, y].alpha > 0.5f
         }
     }
 
-    val full = signedDistance(inside, layerWidth, layerHeight)
+    val full = signedDistance(inside, layerWidth, layerHeight, buffers)
     // A texel covers FIELD_SCALE x FIELD_SCALE layer pixels and is sampled at its centre, which
     // is the mean of the pixel centres it covers; distance is smooth, so the mean is the value.
     val distance = FloatArray(fw * fh)
@@ -156,18 +223,22 @@ internal fun buildPathField(
  * are wrong by up to 8% on diagonals, which shows up as a normal that leans the wrong way on
  * exactly the sloped edges a hand-drawn shape is made of.
  */
-private fun signedDistance(inside: BooleanArray, w: Int, h: Int): FloatArray {
-    val outer = edt(inside, w, h, seedInside = false)
-    val inner = edt(inside, w, h, seedInside = true)
-    return FloatArray(w * h) { outer[it] - inner[it] }
+private fun signedDistance(inside: BooleanArray, w: Int, h: Int, buffers: GlassPathFieldBuffers): FloatArray {
+    val count = w * h
+    val outer = buffers.outer
+    edt(inside, w, h, seedInside = false, buffers).copyInto(outer, endIndex = count)
+    val inner = edt(inside, w, h, seedInside = true, buffers)
+    for (i in 0 until count) outer[i] -= inner[i]
+    return outer
 }
 
 private const val FAR = 1e9f
 
-private fun edt(inside: BooleanArray, w: Int, h: Int, seedInside: Boolean): FloatArray {
-    val dx = FloatArray(w * h)
-    val dy = FloatArray(w * h)
-    val d = FloatArray(w * h)
+/** Overwrites the active scratch rectangle with distances to the selected mask boundary. */
+private fun edt(inside: BooleanArray, w: Int, h: Int, seedInside: Boolean, buffers: GlassPathFieldBuffers): FloatArray {
+    val dx = buffers.dx
+    val dy = buffers.dy
+    val d = buffers.distance
 
     for (i in 0 until w * h) {
         val seed = if (seedInside) !inside[i] else inside[i]
@@ -178,6 +249,7 @@ private fun edt(inside: BooleanArray, w: Int, h: Int, seedInside: Boolean): Floa
         }
     }
 
+    /** Propagates a neighboring seed only when its squared distance improves this pixel. */
     fun compare(i: Int, ox: Int, oy: Int, sx: Int, sy: Int) {
         val nx = i + ox + oy * w
         if (nx < 0 || nx >= w * h) return
@@ -217,7 +289,7 @@ private fun edt(inside: BooleanArray, w: Int, h: Int, seedInside: Boolean): Floa
         }
     }
 
-    for (i in d.indices) if (d[i] >= FAR) d[i] = min(w, h).toFloat()
+    for (i in 0 until w * h) if (d[i] >= FAR) d[i] = min(w, h).toFloat()
     return d
 }
 
